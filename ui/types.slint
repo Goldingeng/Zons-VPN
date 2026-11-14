@@ -1,0 +1,82 @@
+export struct Node {
+    name: string,
+    kind: string,
+    delay: int,
+    selected: bool,
+}
+
+export struct Group {
+    name: string,
+    kind: string,
+    now: string,
+    nodes: [Node],
+    open: bool,
+    testing: bool,
+}
+
+export struct Profile {
+    name: string,
+    file: string,
+    url: string,
+    active: bool,
+}
+
+export struct Conn {
+    id: string,
+    host: string,
+    process: string,
+    chain: string,
+    rule: string,
+    up: string,
+    down: string,
+}
+
+export global State {
+    in-out property <int> page: 0;
+    in property <bool> running;
+    in property <bool> ready;
+    in property <bool> admin;
+    in-out property <bool> sysproxy;
+    in-out property <bool> tun;
+    in-out property <string> mode: "rule";
+    in property <string> profile;
+    in property <string> node;
+    in property <string> node-group;
+    in property <string> up-speed: "0 Б/с";
+    in property <string> down-speed: "0 Б/с";
+    in property <string> up-total: "0 Б";
+    in property <string> down-total: "0 Б";
+    in property <[Group]> groups;
+    in property <[Profile]> profiles;
+    in property <[Conn]> conns;
+    in property <[string]> bypass;
+    in property <[string]> seen-apps;
+    in property <bool> updating;
+    in property <string> status;
+    in property <bool> status-bad;
+    in-out property <int> port: 7890;
+    in-out property <bool> autostart;
+
+    callback page-changed(int);
+    callback set-sysproxy(bool);
+    callback set-tun(bool);
+    callback set-mode(string);
+    callback select(string, string);
+    callback test(string);
+    callback toggle-group(string);
+    callback use-profile(string);
+    callback add-profile(string, string);
+    callback remove-profile(string);
+    callback update-profiles(string);
+    callback add-app(string);
+    callback remove-app(string);
+    callback browse-app();
+    callback close-conn(string);
+    callback close-all();
+    callback set-port(int);
+    callback set-autostart(bool);
+    callback restart();
+    callback open-dir();
+    callback open-log();
+    callback quit();
+}

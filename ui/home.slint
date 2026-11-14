@@ -1,0 +1,179 @@
+import { Switch } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { State } from "types.slint";
+import { Card, Title, Label, Dim, Seg } from "parts.slint";
+
+component Stat inherits Card {
+    in property <string> label;
+    in property <string> value;
+    in property <string> sub;
+    horizontal-stretch: 1;
+    VerticalLayout {
+        padding: 16px;
+        spacing: 6px;
+        Dim {
+            text: root.label;
+        }
+        Text {
+            text: root.value;
+            color: Theme.text;
+            font-size: 20px;
+            font-weight: 600;
+            overflow: elide;
+        }
+        Dim {
+            text: root.sub;
+            overflow: elide;
+        }
+    }
+}
+
+component SwitchCard inherits Card {
+    in property <string> label;
+    in property <string> hint;
+    in-out property <bool> on;
+    callback toggled(bool);
+    horizontal-stretch: 1;
+    HorizontalLayout {
+        padding: 16px;
+        spacing: 12px;
+        VerticalLayout {
+            alignment: center;
+            spacing: 4px;
+            horizontal-stretch: 1;
+            Text {
+                text: root.label;
+                color: Theme.text;
+                font-size: 15px;
+                font-weight: 600;
+            }
+            Dim {
+                text: root.hint;
+                wrap: word-wrap;
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            Switch {
+                checked <=> root.on;
+                toggled => {
+                    root.toggled(self.checked);
+                }
+            }
+        }
+    }
+}
+
+export component HomePage inherits VerticalLayout {
+    padding: 24px;
+    spacing: 16px;
+    alignment: start;
+    Title {
+        text: "Обзор";
+    }
+    Card {
+        HorizontalLayout {
+            padding: 16px;
+            spacing: 12px;
+            VerticalLayout {
+                alignment: center;
+                Rectangle {
+                    width: 12px;
+                    height: 12px;
+                    border-radius: 6px;
+                    background: State.ready ? Theme.good : State.running ? Theme.warn : Theme.bad;
+                }
+            }
+            VerticalLayout {
+                spacing: 4px;
+                horizontal-stretch: 1;
+                Text {
+                    text: State.ready ? "Подключено" : State.running ? "Запуск ядра…" : "Ядро остановлено";
+                    color: Theme.text;
+                    font-size: 16px;
+                    font-weight: 600;
+                }
+                Dim {
+                    text: State.profile == "" ? "Профиль не выбран" : "Профиль: " + State.profile;
+                    overflow: elide;
+                }
+                if !State.running && State.status-bad: Dim {
+                    text: State.status;
+                    color: Theme.bad;
+                    overflow: elide;
+                }
+            }
+        }
+    }
+    HorizontalLayout {
+        spacing: 16px;
+        SwitchCard {
+            label: "Системный прокси";
+            hint: "Браузеры и программы, которые используют прокси Windows";
+            on <=> State.sysproxy;
+            toggled(v) => {
+                State.set-sysproxy(v);
+            }
+        }
+        SwitchCard {
+            label: "TUN";
+            hint: State.admin ? "Весь трафик системы через виртуальный адаптер" : "Включение перезапустит программу от администратора";
+            on <=> State.tun;
+            toggled(v) => {
+                State.set-tun(v);
+            }
+        }
+    }
+    Card {
+        VerticalLayout {
+            padding: 16px;
+            spacing: 10px;
+            Label {
+                text: "Режим";
+                font-weight: 600;
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                Seg {
+                    text: "Правила";
+                    active: State.mode == "rule";
+                    clicked => {
+                        State.set-mode("rule");
+                    }
+                }
+                Seg {
+                    text: "Глобально";
+                    active: State.mode == "global";
+                    clicked => {
+                        State.set-mode("global");
+                    }
+                }
+                Seg {
+                    text: "Напрямую";
+                    active: State.mode == "direct";
+                    clicked => {
+                        State.set-mode("direct");
+                    }
+                }
+            }
+        }
+    }
+    HorizontalLayout {
+        spacing: 16px;
+        Stat {
+            label: "Загрузка";
+            value: State.down-speed;
+            sub: "Всего " + State.down-total;
+        }
+        Stat {
+            label: "Отдача";
+            value: State.up-speed;
+            sub: "Всего " + State.up-total;
+        }
+        Stat {
+            label: "Узел";
+            value: State.node == "" ? "—" : State.node;
+            sub: State.node-group;
+        }
+    }
+}

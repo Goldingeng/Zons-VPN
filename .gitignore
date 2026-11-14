@@ -1,0 +1,12 @@
+/target
+/app
+*.exe
+*.dll
+*.db
+*.metadb
+*.log
+subs.txt
+settings.ini
+run.yaml
+profiles/
+.env

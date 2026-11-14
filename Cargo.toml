@@ -1,0 +1,18 @@
+[package]
+name = "clashtray"
+version = "0.2.0"
+edition = "2021"
+rust-version = "1.82"
+
+[dependencies]
+slint = { version = "~1.17", default-features = false, features = ["std", "compat-1-2", "backend-winit", "renderer-software", "software-renderer-systemfonts"] }
+
+[build-dependencies]
+slint-build = "~1.17"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

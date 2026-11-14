@@ -1,0 +1,139 @@
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+
+export component Card inherits Rectangle {
+    background: Theme.card;
+    border-radius: Theme.radius;
+}
+
+export component Title inherits Text {
+    color: Theme.text;
+    font-size: 22px;
+    font-weight: 700;
+}
+
+export component Label inherits Text {
+    color: Theme.text;
+    font-size: 14px;
+    vertical-alignment: center;
+}
+
+export component Dim inherits Text {
+    color: Theme.dim;
+    font-size: 12px;
+}
+
+export component Btn inherits Rectangle {
+    in property <string> text;
+    in property <bool> primary;
+    in property <bool> enabled: true;
+    callback clicked;
+    height: 32px;
+    border-radius: 8px;
+    opacity: root.enabled ? 1 : 0.5;
+    background: root.primary ? (ta.has-hover ? Theme.accent-hover : Theme.accent) : (ta.has-hover ? Theme.hover : Theme.line);
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 14px;
+        Text {
+            text: root.text;
+            color: #ffffff;
+            font-size: 13px;
+            vertical-alignment: center;
+            horizontal-alignment: center;
+        }
+    }
+    ta := TouchArea {
+        enabled: root.enabled;
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+export component Seg inherits Rectangle {
+    in property <string> text;
+    in property <bool> active;
+    callback clicked;
+    height: 34px;
+    min-width: 90px;
+    horizontal-stretch: 1;
+    border-radius: 8px;
+    background: root.active ? Theme.accent : ta.has-hover ? Theme.hover : Theme.line;
+    Text {
+        width: parent.width;
+        height: parent.height;
+        text: root.text;
+        color: root.active ? #ffffff : Theme.text;
+        font-size: 13px;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    ta := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+export component NavItem inherits Rectangle {
+    in property <string> text;
+    in property <bool> active;
+    callback clicked;
+    height: 40px;
+    border-radius: 10px;
+    background: root.active ? Theme.accent : ta.has-hover ? Theme.hover : transparent;
+    Text {
+        x: 14px;
+        height: parent.height;
+        text: root.text;
+        color: root.active ? #ffffff : Theme.text;
+        font-size: 14px;
+        vertical-alignment: center;
+    }
+    ta := TouchArea {
+        clicked => {
+            root.clicked();
+        }
+    }
+}
+
+export component Scroll inherits ScrollView {
+    in property <length> gap: 8px;
+    viewport-width: self.visible-width;
+    viewport-height: lay.preferred-height;
+    lay := VerticalLayout {
+        width: root.visible-width;
+        spacing: root.gap;
+        @children
+    }
+}
+
+export component AppRow inherits Rectangle {
+    in property <string> name;
+    in property <string> action;
+    callback clicked;
+    height: 40px;
+    border-radius: 8px;
+    background: ta.has-hover ? Theme.hover : transparent;
+    ta := TouchArea { }
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 6px;
+        spacing: 8px;
+        Label {
+            text: root.name;
+            overflow: elide;
+            horizontal-stretch: 1;
+        }
+        VerticalLayout {
+            alignment: center;
+            Btn {
+                text: root.action;
+                clicked => {
+                    root.clicked();
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,89 @@
+import { LineEdit, Switch, AboutSlint } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { State } from "types.slint";
+import { Card, Title, Label, Dim, Btn } from "parts.slint";
+
+export component SettingsPage inherits VerticalLayout {
+    padding: 24px;
+    spacing: 16px;
+    alignment: start;
+    Title {
+        text: "Настройки";
+    }
+    Card {
+        VerticalLayout {
+            padding: 16px;
+            spacing: 14px;
+            HorizontalLayout {
+                spacing: 12px;
+                Label {
+                    text: "Порт прокси";
+                    horizontal-stretch: 1;
+                }
+                LineEdit {
+                    width: 120px;
+                    text: State.port;
+                    input-type: number;
+                    accepted(t) => {
+                        State.set-port(t.to-float());
+                    }
+                }
+            }
+            HorizontalLayout {
+                spacing: 12px;
+                Label {
+                    text: "Запускать вместе с Windows (свёрнутым в трей)";
+                    horizontal-stretch: 1;
+                }
+                Switch {
+                    checked <=> State.autostart;
+                    toggled => {
+                        State.set-autostart(self.checked);
+                    }
+                }
+            }
+        }
+    }
+    Card {
+        HorizontalLayout {
+            padding: 16px;
+            spacing: 8px;
+            alignment: start;
+            Btn {
+                text: "Перезапустить ядро";
+                clicked => {
+                    State.restart();
+                }
+            }
+            Btn {
+                text: "Журнал ядра";
+                clicked => {
+                    State.open-log();
+                }
+            }
+            Btn {
+                text: "Открыть папку";
+                clicked => {
+                    State.open-dir();
+                }
+            }
+        }
+    }
+    Card {
+        VerticalLayout {
+            padding: 16px;
+            spacing: 10px;
+            Label {
+                text: "О программе";
+                font-weight: 600;
+            }
+            Dim {
+                text: "ClashTray — нативная оболочка для ядра mihomo";
+            }
+            HorizontalLayout {
+                alignment: start;
+                AboutSlint { }
+            }
+        }
+    }
+}

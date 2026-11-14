@@ -1,0 +1,108 @@
+import { LineEdit } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { State } from "types.slint";
+import { Card, Title, Label, Dim, Btn, Scroll, AppRow } from "parts.slint";
+
+export component BypassPage inherits VerticalLayout {
+    padding: 24px;
+    spacing: 16px;
+    Title {
+        text: "Мимо VPN";
+    }
+    Dim {
+        text: "Трафик этих приложений идёт напрямую, минуя прокси и TUN. Указывается имя .exe";
+        wrap: word-wrap;
+    }
+    Card {
+        HorizontalLayout {
+            padding: 12px;
+            spacing: 8px;
+            app := LineEdit {
+                horizontal-stretch: 1;
+                placeholder-text: "например telegram.exe";
+                accepted(t) => {
+                    State.add-app(t);
+                    self.text = "";
+                }
+            }
+            VerticalLayout {
+                alignment: center;
+                Btn {
+                    text: "Добавить";
+                    primary: true;
+                    clicked => {
+                        State.add-app(app.text);
+                        app.text = "";
+                    }
+                }
+            }
+            VerticalLayout {
+                alignment: center;
+                Btn {
+                    text: "Обзор…";
+                    clicked => {
+                        State.browse-app();
+                    }
+                }
+            }
+        }
+    }
+    HorizontalLayout {
+        spacing: 16px;
+        vertical-stretch: 1;
+        Card {
+            horizontal-stretch: 1;
+            VerticalLayout {
+                padding: 12px;
+                spacing: 8px;
+                Label {
+                    text: "Исключения: " + State.bypass.length;
+                    font-weight: 600;
+                }
+                if State.bypass.length == 0: Dim {
+                    text: "Добавьте .exe вручную, кнопкой «Обзор…» или из списка справа";
+                    wrap: word-wrap;
+                    preferred-width: 0px;
+                }
+                Scroll {
+                    vertical-stretch: 1;
+                    gap: 2px;
+                    for a in State.bypass: AppRow {
+                        name: a;
+                        action: "Убрать";
+                        clicked => {
+                            State.remove-app(a);
+                        }
+                    }
+                }
+            }
+        }
+        Card {
+            horizontal-stretch: 1;
+            VerticalLayout {
+                padding: 12px;
+                spacing: 8px;
+                Label {
+                    text: "Сейчас в сети";
+                    font-weight: 600;
+                }
+                if State.seen-apps.length == 0: Dim {
+                    text: State.running ? "Пока никто не подключался" : "Список появится после запуска ядра";
+                    wrap: word-wrap;
+                    preferred-width: 0px;
+                }
+                Scroll {
+                    vertical-stretch: 1;
+                    gap: 2px;
+                    for a in State.seen-apps: AppRow {
+                        name: a;
+                        action: "Добавить";
+                        clicked => {
+                            State.add-app(a);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
