@@ -28,6 +28,7 @@ fn main() {
     let Ok(ui) = AppWindow::new() else { return };
     tray::init(app::on_tray, app::tray_state);
     app::init(&ui);
+    app::repaint(&ui);
     if !hidden {
         let _ = slint::ComponentHandle::show(&ui);
     }
