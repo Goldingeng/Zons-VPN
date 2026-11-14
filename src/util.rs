@@ -79,3 +79,11 @@ pub fn free_port() -> u16 {
         .map(|a| a.port())
         .unwrap_or(9097)
 }
+
+pub fn port_open(p: u16) -> bool {
+    TcpListener::bind(("127.0.0.1", p)).is_ok() && TcpListener::bind(("0.0.0.0", p)).is_ok()
+}
+
+pub fn near_port(p: u16) -> u16 {
+    (p..p.saturating_add(100)).find(|&p| port_open(p)).unwrap_or_else(free_port)
+}

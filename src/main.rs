@@ -5,6 +5,7 @@ slint::include_modules!();
 mod api;
 mod app;
 mod autorun;
+mod coreup;
 mod dialog;
 mod engine;
 mod ffi;

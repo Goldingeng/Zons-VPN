@@ -58,6 +58,7 @@ export global State {
     in property <bool> status-bad;
     in-out property <int> port: 7890;
     in-out property <bool> autostart;
+    in property <string> core-version;
 
     callback page-changed(int);
     callback set-sysproxy(bool);
@@ -78,6 +79,7 @@ export global State {
     callback set-port(int);
     callback set-autostart(bool);
     callback restart();
+    callback update-core();
     callback open-dir();
     callback open-log();
     callback quit();

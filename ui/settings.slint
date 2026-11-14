@@ -80,7 +80,7 @@ export component SettingsPage inherits VerticalLayout {
             }
             Card {
                 Row {
-                    label: "mihomo";
+                    label: State.core-version == "" ? "mihomo не найдено" : "mihomo " + State.core-version;
                     hint: State.ready ? "Работает" : State.running ? "Запускается" : "Остановлено";
                     VerticalLayout {
                         alignment: center;
@@ -89,6 +89,16 @@ export component SettingsPage inherits VerticalLayout {
                             text: "Перезапустить";
                             clicked => {
                                 State.restart();
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Btn {
+                            icon: Icons.down;
+                            text: "Обновить";
+                            clicked => {
+                                State.update-core();
                             }
                         }
                     }
