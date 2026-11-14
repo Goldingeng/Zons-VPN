@@ -112,7 +112,7 @@ pub fn init(handler: fn(Ev), state: fn() -> (bool, bool)) {
     nid.flags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     nid.callback = WM_TRAY;
     nid.icon = icons[0];
-    fill(&mut nid.tip, "Clash");
+    fill(&mut nid.tip, "Zons VPN");
     unsafe { Shell_NotifyIconW(NIM_ADD, &nid) };
     let taskbar = unsafe { RegisterWindowMessageW(w("TaskbarCreated").as_ptr()) };
     TRAY.with(|t| *t.borrow_mut() = Some(T { hwnd, nid, icons, taskbar, handler, state }));

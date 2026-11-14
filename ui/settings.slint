@@ -1,88 +1,162 @@
-import { LineEdit, Switch, AboutSlint } from "std-widgets.slint";
+import { LineEdit, AboutSlint } from "std-widgets.slint";
 import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
 import { State } from "types.slint";
-import { Card, Title, Label, Dim, Btn } from "parts.slint";
+import { Card, Header, Head, Label, Dim, Btn, Toggle, Scroll, Column, Icon } from "parts.slint";
+
+component Row inherits HorizontalLayout {
+    in property <string> label;
+    in property <string> hint;
+    padding: 16px;
+    spacing: 12px;
+    VerticalLayout {
+        alignment: center;
+        spacing: 3px;
+        horizontal-stretch: 1;
+        Label {
+            text: root.label;
+        }
+        Dim {
+            text: root.hint;
+        }
+    }
+    @children
+}
 
 export component SettingsPage inherits VerticalLayout {
-    padding: 24px;
-    spacing: 16px;
-    alignment: start;
-    Title {
-        text: "Настройки";
+    padding-left: 32px;
+    padding-right: 32px;
+    padding-top: 26px;
+    spacing: 18px;
+    Header {
+        title: "Настройки";
     }
-    Card {
-        VerticalLayout {
-            padding: 16px;
-            spacing: 14px;
-            HorizontalLayout {
-                spacing: 12px;
-                Label {
-                    text: "Порт прокси";
-                    horizontal-stretch: 1;
-                }
-                LineEdit {
-                    width: 120px;
-                    text: State.port;
-                    input-type: number;
-                    accepted(t) => {
-                        State.set-port(t.to-float());
+    Scroll {
+        vertical-stretch: 1;
+        pad: 24px;
+        Column {
+            Head {
+                text: "Приложение";
+            }
+            Card {
+                VerticalLayout {
+                    Row {
+                        label: "Порт прокси";
+                        hint: "Локальный порт для подключения приложений";
+                        VerticalLayout {
+                            alignment: center;
+                            LineEdit {
+                                width: 110px;
+                                text: State.port;
+                                input-type: number;
+                                horizontal-alignment: right;
+                                accepted(t) => {
+                                    State.set-port(t.to-float());
+                                }
+                            }
+                        }
+                    }
+                    Rectangle {
+                        height: 1px;
+                        background: Theme.line;
+                    }
+                    Row {
+                        label: "Запускать вместе с Windows";
+                        hint: "Сворачивать в трей при запуске";
+                        VerticalLayout {
+                            alignment: center;
+                            Toggle {
+                                on: State.autostart;
+                                toggled(v) => {
+                                    State.set-autostart(v);
+                                }
+                            }
+                        }
                     }
                 }
             }
-            HorizontalLayout {
-                spacing: 12px;
-                Label {
-                    text: "Запускать вместе с Windows (свёрнутым в трей)";
-                    horizontal-stretch: 1;
-                }
-                Switch {
-                    checked <=> State.autostart;
-                    toggled => {
-                        State.set-autostart(self.checked);
+            Head {
+                text: "Ядро";
+            }
+            Card {
+                Row {
+                    label: "mihomo";
+                    hint: State.ready ? "Работает" : State.running ? "Запускается" : "Остановлено";
+                    VerticalLayout {
+                        alignment: center;
+                        Btn {
+                            icon: Icons.refresh;
+                            text: "Перезапустить";
+                            clicked => {
+                                State.restart();
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Btn {
+                            icon: Icons.file;
+                            text: "Журнал ядра";
+                            clicked => {
+                                State.open-log();
+                            }
+                        }
+                    }
+                    VerticalLayout {
+                        alignment: center;
+                        Btn {
+                            icon: Icons.folder;
+                            text: "Открыть папку";
+                            clicked => {
+                                State.open-dir();
+                            }
+                        }
                     }
                 }
             }
-        }
-    }
-    Card {
-        HorizontalLayout {
-            padding: 16px;
-            spacing: 8px;
-            alignment: start;
-            Btn {
-                text: "Перезапустить ядро";
-                clicked => {
-                    State.restart();
-                }
-            }
-            Btn {
-                text: "Журнал ядра";
-                clicked => {
-                    State.open-log();
-                }
-            }
-            Btn {
-                text: "Открыть папку";
-                clicked => {
-                    State.open-dir();
-                }
-            }
-        }
-    }
-    Card {
-        VerticalLayout {
-            padding: 16px;
-            spacing: 10px;
-            Label {
+            Head {
                 text: "О программе";
-                font-weight: 600;
             }
-            Dim {
-                text: "ClashTray — нативная оболочка для ядра mihomo";
-            }
-            HorizontalLayout {
-                alignment: start;
-                AboutSlint { }
+            Card {
+                VerticalLayout {
+                    padding: 16px;
+                    spacing: 12px;
+                    HorizontalLayout {
+                        spacing: 12px;
+                        VerticalLayout {
+                            alignment: center;
+                            Icon {
+                                d: Icons.shield;
+                                width: 30px;
+                                height: 30px;
+                                color: Theme.accent-text;
+                            }
+                        }
+                        VerticalLayout {
+                            spacing: 2px;
+                            Text {
+                                text: "Zons VPN";
+                                color: Theme.text;
+                                font-size: 20px;
+                                font-weight: 600;
+                            }
+                            Dim {
+                                text: "Нативный клиент для ядра mihomo";
+                            }
+                        }
+                    }
+                    Rectangle {
+                        height: 1px;
+                        background: Theme.line;
+                    }
+                    HorizontalLayout {
+                        alignment: start;
+                        AboutSlint {
+                            width: 180px;
+                            height: 110px;
+                        }
+                    }
+                }
             }
         }
     }
