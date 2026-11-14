@@ -760,6 +760,7 @@ fn show() {
     if let Some(u) = with(|c| c.ui.upgrade()).flatten() {
         let _ = u.show();
         u.window().set_minimized(false);
+        u.set_flip(!u.get_flip());
     }
 }
 
