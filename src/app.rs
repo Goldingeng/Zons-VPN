@@ -6,6 +6,8 @@ use crate::tray::{self, Ev};
 use crate::util::{base, exe, w, wp, work};
 use crate::view::{self, PGroup, Snap};
 use crate::{autorun, dialog, profiles, sysproxy, AppWindow, Profile, State};
+use slint::winit_030::winit::event::WindowEvent;
+use slint::winit_030::{EventResult, WinitWindowAccessor};
 use slint::{ComponentHandle, ModelRc, Timer, TimerMode, VecModel, Weak};
 use std::cell::RefCell;
 use std::collections::{BTreeSet, HashSet};
@@ -668,6 +670,21 @@ fn show() {
         let _ = u.show();
         u.window().set_minimized(false);
     }
+}
+
+pub fn repaint(ui: &AppWindow) {
+    let weak = ui.as_weak();
+    ui.window().on_winit_window_event(move |_, e| {
+        let full = match e {
+            WindowEvent::Resized(s) => s.width > 0 && s.height > 0,
+            WindowEvent::Occluded(o) => !o,
+            _ => false,
+        };
+        if let (true, Some(u)) = (full, weak.upgrade()) {
+            u.set_flip(!u.get_flip());
+        }
+        EventResult::Propagate
+    });
 }
 
 fn quit() {

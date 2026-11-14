@@ -18,6 +18,7 @@ export component AppWindow inherits Window {
     min-height: 540px;
     background: Theme.bg;
     default-font-family: "Segoe UI";
+    in-out property <bool> flip;
     HorizontalLayout {
         Rectangle {
             width: 210px;
@@ -79,5 +80,8 @@ export component AppWindow inherits Window {
                 height: parent.height;
             }
         }
+    }
+    Rectangle {
+        background: root.flip ? #00000001 : #00000000;
     }
 }
