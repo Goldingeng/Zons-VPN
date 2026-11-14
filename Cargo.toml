@@ -9,6 +9,7 @@ slint = { version = "~1.17", default-features = false, features = ["std", "compa
 
 [build-dependencies]
 slint-build = "~1.17"
+embed-resource = "3"
 
 [profile.release]
 opt-level = "s"

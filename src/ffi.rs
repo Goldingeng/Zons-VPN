@@ -32,6 +32,7 @@ pub const NIF_INFO: u32 = 0x10;
 pub const NIIF_INFO: u32 = 0x1;
 pub const NIIF_ERROR: u32 = 0x3;
 pub const SM_CXSMICON: i32 = 49;
+pub const IMAGE_ICON: u32 = 1;
 
 pub const ERROR_ALREADY_EXISTS: u32 = 183;
 pub const WAIT_TIMEOUT: u32 = 0x102;
@@ -191,7 +192,7 @@ extern "system" {
     pub fn DestroyMenu(m: HMENU) -> i32;
     pub fn GetCursorPos(pt: *mut POINT) -> i32;
     pub fn SetForegroundWindow(h: HWND) -> i32;
-    pub fn CreateIcon(inst: HINSTANCE, w: i32, h: i32, planes: u8, bits: u8, and: *const u8, xor: *const u8) -> HICON;
+    pub fn LoadImageW(inst: HINSTANCE, name: *const u16, kind: u32, w: i32, h: i32, flags: u32) -> HICON;
     pub fn DestroyIcon(i: HICON) -> i32;
     pub fn GetSystemMetrics(i: i32) -> i32;
     pub fn FindWindowW(cls: *const u16, name: *const u16) -> HWND;
