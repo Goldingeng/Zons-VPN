@@ -56,6 +56,12 @@ export component SettingsPage inherits VerticalLayout {
                 }
             }
             Btn {
+                text: "Обновить ядро";
+                clicked => {
+                    State.update-core();
+                }
+            }
+            Btn {
                 text: "Журнал ядра";
                 clicked => {
                     State.open-log();
@@ -78,7 +84,10 @@ export component SettingsPage inherits VerticalLayout {
                 font-weight: 600;
             }
             Dim {
-                text: "ClashTray — нативная оболочка для ядра mihomo";
+                text: "Zons VPN — нативная оболочка для ядра mihomo";
+            }
+            Dim {
+                text: State.core-version == "" ? "Ядро mihomo не найдено" : "Ядро mihomo " + State.core-version;
             }
             HorizontalLayout {
                 alignment: start;

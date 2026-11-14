@@ -3,9 +3,9 @@ use crate::engine::Core;
 use crate::ffi::{IsUserAnAdmin, ShellExecuteW};
 use crate::settings::Settings;
 use crate::tray::{self, Ev};
-use crate::util::{base, exe, w, wp, work};
+use crate::util::{base, exe, near_port, port_open, w, wp, work};
 use crate::view::{self, PGroup, Snap};
-use crate::{autorun, dialog, profiles, sysproxy, AppWindow, Profile, State};
+use crate::{autorun, coreup, dialog, profiles, sysproxy, AppWindow, Profile, State};
 use slint::{ComponentHandle, ModelRc, Timer, TimerMode, VecModel, Weak};
 use std::cell::RefCell;
 use std::collections::{BTreeSet, HashSet};
@@ -34,6 +34,8 @@ struct Ctl {
     tick: u32,
     updating: bool,
     down: bool,
+    fresh: bool,
+    fetching: bool,
     _timer: Timer,
 }
 
@@ -84,6 +86,8 @@ pub fn init(ui: &AppWindow) {
         tick: 0,
         updating: false,
         down: false,
+        fresh: false,
+        fetching: false,
         _timer: timer,
     };
     CTL.with(|c| *c.borrow_mut() = Some(ctl));
@@ -153,6 +157,9 @@ fn bind(s: &State) {
     s.on_restart(|| {
         with(Ctl::start);
     });
+    s.on_update_core(|| {
+        with(|c| c.fetch_core(true));
+    });
     s.on_open_dir(|| open(&base()));
     s.on_open_log(|| open(&work().join("mihomo.log")));
     s.on_quit(quit);
@@ -181,13 +188,12 @@ impl Ctl {
 
     fn boot(&mut self) {
         let _ = std::fs::create_dir_all(profiles::dir());
-        if Core::exe().is_none() {
-            self.say("mihomo.exe не найден рядом с программой", true);
-        }
         self.show_bypass();
         self.pick();
         self.show_profiles();
-        if !self.st.profile.is_empty() {
+        if Core::exe().is_none() && !coreup::staged() {
+            self.fetch_core(true);
+        } else if !self.st.profile.is_empty() {
             self.start();
         } else if !profiles::subs().is_empty() {
             self.update(String::new());
@@ -206,12 +212,29 @@ impl Ctl {
     fn start(&mut self) {
         self.halt();
         self.gen += 1;
+        if coreup::apply() {
+            self.fresh = true;
+        }
+        self.show_core();
         if self.st.profile.is_empty() {
             self.sync();
             return;
         }
-        let r = profiles::build(&self.st.profile, &self.st.bypass, self.st.port).and_then(|p| self.core.start(&p));
+        let port = near_port(self.st.port);
+        if port != self.st.port {
+            self.say(&format!("Порт {} занят, прокси работает на {port}", self.st.port), false);
+            self.st.port = port;
+            self.st.save();
+            self.ui(|s| s.set_port(port as i32));
+        }
+        let r = match profiles::build(&self.st.profile, &self.st.bypass, self.st.port) {
+            Ok(p) => self.core.start(&p),
+            Err(e) => return self.fail(&e),
+        };
         if let Err(e) = r {
+            if self.revert() {
+                return;
+            }
             self.fail(&e);
             return;
         }
@@ -242,6 +265,13 @@ impl Ctl {
     fn started(&mut self, g: usize, ok: bool) {
         if g != self.gen {
             return;
+        }
+        if self.fresh {
+            if !ok && self.revert() {
+                return;
+            }
+            self.fresh = false;
+            coreup::commit();
         }
         self.ok = ok;
         if !ok {
@@ -363,7 +393,9 @@ impl Ctl {
     }
 
     fn set_port(&mut self, p: i32) {
-        if (1..=65535).contains(&p) {
+        if (1..=65535).contains(&p) && p as u16 != self.st.port && !port_open(p as u16) {
+            self.say(&format!("Порт {p} занят другой программой"), true);
+        } else if (1..=65535).contains(&p) {
             self.st.port = p as u16;
             self.st.save();
             if self.ok {
@@ -377,6 +409,59 @@ impl Ctl {
         }
         let port = self.st.port as i32;
         self.ui(|s| s.set_port(port));
+    }
+
+    fn show_core(&self) {
+        let ui = self.ui.clone();
+        thread::spawn(move || {
+            let v = coreup::current();
+            let _ = ui.upgrade_in_event_loop(move |u| u.global::<State>().set_core_version(v.as_str().into()));
+        });
+    }
+
+    fn fetch_core(&mut self, force: bool) {
+        if self.fetching {
+            return;
+        }
+        self.fetching = true;
+        if force {
+            self.say("Проверяю обновление ядра mihomo…", false);
+        }
+        let proxy = self.ok.then_some(self.st.port);
+        thread::spawn(move || {
+            let r = coreup::check(proxy, force);
+            later(move |c| c.fetched(force, r));
+        });
+    }
+
+    fn fetched(&mut self, force: bool, r: Result<Option<String>, String>) {
+        self.fetching = false;
+        let first = Core::exe().is_none();
+        match r {
+            Ok(Some(tag)) if first || !self.core.alive() => {
+                self.say(&format!("Ядро mihomo {tag} установлено"), false);
+                self.start();
+            }
+            Ok(Some(tag)) => self.say(&format!("Ядро mihomo {tag} скачано, установится при следующем запуске"), false),
+            Ok(None) if force && !first => self.say("Установлена последняя версия ядра", false),
+            Ok(None) => {}
+            Err(e) if first || force => self.say(&format!("Не удалось скачать ядро mihomo: {e}"), true),
+            Err(_) => {}
+        }
+    }
+
+    fn revert(&mut self) -> bool {
+        if !self.fresh {
+            return false;
+        }
+        self.fresh = false;
+        self.halt();
+        if !coreup::rollback() {
+            return false;
+        }
+        self.say("Новое ядро не запустилось, вернул прежнее", true);
+        self.start();
+        true
     }
 
     fn render(&self) {
@@ -460,6 +545,9 @@ impl Ctl {
                 s.set_up_speed("0 Б/с".into());
             });
             return;
+        }
+        if self.tick % 3600 == 10 {
+            self.fetch_core(false);
         }
         if self.busy.swap(true, Ordering::SeqCst) {
             return;

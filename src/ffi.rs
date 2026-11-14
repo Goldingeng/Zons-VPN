@@ -253,3 +253,10 @@ extern "system" {
     pub fn WinHttpReadData(h: *mut c_void, buf: *mut c_void, len: u32, read: *mut u32) -> i32;
     pub fn WinHttpCloseHandle(h: *mut c_void) -> i32;
 }
+
+pub const BCRYPT_SHA256: HANDLE = 0x41 as HANDLE;
+
+#[link(name = "bcrypt")]
+extern "system" {
+    pub fn BCryptHash(alg: HANDLE, key: *const u8, key_len: u32, data: *const u8, len: u32, out: *mut u8, out_len: u32) -> i32;
+}
