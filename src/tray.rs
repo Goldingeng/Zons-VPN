@@ -65,20 +65,8 @@ pub fn wake() {
     }
 }
 
-fn icon(inst: HINSTANCE, n: usize, (r, g, b): (u8, u8, u8)) -> HICON {
-    let mut xor = vec![0u8; n * n * 4];
-    let and = vec![0u8; n.div_ceil(16) * 2 * n];
-    let c = (n as f32 - 1.0) / 2.0;
-    let rad = n as f32 * 0.42;
-    for y in 0..n {
-        for x in 0..n {
-            let d = ((x as f32 - c).powi(2) + (y as f32 - c).powi(2)).sqrt();
-            let a = (rad - d + 0.5).clamp(0.0, 1.0);
-            let i = (y * n + x) * 4;
-            xor[i..i + 4].copy_from_slice(&[b, g, r, (a * 255.0) as u8]);
-        }
-    }
-    unsafe { CreateIcon(inst, n as i32, n as i32, 1, 32, and.as_ptr(), xor.as_ptr()) }
+fn icon(inst: HINSTANCE, id: usize, n: i32) -> HICON {
+    unsafe { LoadImageW(inst, id as *const u16, IMAGE_ICON, n, n, 0) }
 }
 
 pub fn init(handler: fn(Ev), state: fn() -> (bool, bool)) {
@@ -103,8 +91,8 @@ pub fn init(handler: fn(Ev), state: fn() -> (bool, bool)) {
     if hwnd.is_null() {
         return;
     }
-    let n = unsafe { GetSystemMetrics(SM_CXSMICON) }.max(16) as usize;
-    let icons = [icon(inst, n, (140, 140, 140)), icon(inst, n, (60, 130, 230)), icon(inst, n, (40, 180, 90))];
+    let n = unsafe { GetSystemMetrics(SM_CXSMICON) }.max(16);
+    let icons = [icon(inst, 2, n), icon(inst, 1, n), icon(inst, 3, n)];
     let mut nid: NOTIFYICONDATAW = unsafe { zeroed() };
     nid.size = size_of::<NOTIFYICONDATAW>() as u32;
     nid.hwnd = hwnd;
@@ -112,7 +100,7 @@ pub fn init(handler: fn(Ev), state: fn() -> (bool, bool)) {
     nid.flags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
     nid.callback = WM_TRAY;
     nid.icon = icons[0];
-    fill(&mut nid.tip, "Clash");
+    fill(&mut nid.tip, "Zons VPN");
     unsafe { Shell_NotifyIconW(NIM_ADD, &nid) };
     let taskbar = unsafe { RegisterWindowMessageW(w("TaskbarCreated").as_ptr()) };
     TRAY.with(|t| *t.borrow_mut() = Some(T { hwnd, nid, icons, taskbar, handler, state }));
