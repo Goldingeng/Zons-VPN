@@ -177,7 +177,7 @@ impl Ctl {
             s.set_status_bad(err);
         });
         if err {
-            tray::notify("Clash", msg, true);
+            tray::notify("Zons VPN", msg, true);
         }
     }
 
@@ -313,7 +313,7 @@ impl Ctl {
         } else {
             1
         };
-        let mut tip = format!("Clash · {}", profiles::label(&self.st.profile));
+        let mut tip = format!("Zons VPN · {}", profiles::label(&self.st.profile));
         if alive && self.st.sysproxy {
             tip.push_str(" · прокси");
         }
@@ -384,10 +384,13 @@ impl Ctl {
     fn render(&self) {
         let m = view::to_groups(&self.groups, &self.open, &self.testing);
         let (node, grp) = self.groups.first().map(|g| (g.now.clone(), g.name.clone())).unwrap_or_default();
+        let (end, delay) = view::resolve(&self.groups, &node);
         self.ui(|s| {
             s.set_groups(m);
             s.set_node(node.as_str().into());
             s.set_node_group(grp.as_str().into());
+            s.set_node_end(end.as_str().into());
+            s.set_node_delay(delay);
         });
     }
 

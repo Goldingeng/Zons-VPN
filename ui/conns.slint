@@ -1,16 +1,34 @@
 import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
 import { State, Conn } from "types.slint";
-import { Title, Dim, Btn, Scroll } from "parts.slint";
+import { Card, Header, Dim, Btn, Scroll, Empty, Hint, Icon } from "parts.slint";
 
 component ConnRow inherits Rectangle {
     in property <Conn> c;
-    height: 56px;
-    border-radius: 10px;
-    background: Theme.card;
+    height: 50px;
+    border-radius: 8px;
+    background: ta.has-hover ? Theme.hover : transparent;
+    ta := TouchArea { }
     HorizontalLayout {
-        padding-left: 14px;
-        padding-right: 10px;
+        padding-left: 12px;
+        padding-right: 8px;
         spacing: 12px;
+        VerticalLayout {
+            alignment: center;
+            spacing: 2px;
+            horizontal-stretch: 2;
+            Text {
+                text: root.c.process;
+                color: Theme.text;
+                font-size: 13px;
+                overflow: elide;
+            }
+            Dim {
+                text: root.c.rule;
+                color: Theme.faint;
+                overflow: elide;
+            }
+        }
         VerticalLayout {
             alignment: center;
             spacing: 2px;
@@ -22,30 +40,42 @@ component ConnRow inherits Rectangle {
                 overflow: elide;
             }
             Dim {
-                text: root.c.process + " · " + root.c.rule;
-                overflow: elide;
-            }
-        }
-        VerticalLayout {
-            alignment: center;
-            horizontal-stretch: 2;
-            Dim {
                 text: root.c.chain;
                 overflow: elide;
             }
         }
-        VerticalLayout {
-            alignment: center;
-            Dim {
-                text: "↓ " + root.c.down + "   ↑ " + root.c.up;
-            }
+        Text {
+            width: 80px;
+            text: root.c.down;
+            color: Theme.dim;
+            font-size: 12px;
+            vertical-alignment: center;
+        }
+        Text {
+            width: 80px;
+            text: root.c.up;
+            color: Theme.dim;
+            font-size: 12px;
+            vertical-alignment: center;
         }
         VerticalLayout {
             alignment: center;
-            Btn {
-                text: "×";
-                clicked => {
-                    State.close-conn(root.c.id);
+            Rectangle {
+                width: 26px;
+                height: 26px;
+                border-radius: 6px;
+                background: x.has-hover ? Theme.line : transparent;
+                Icon {
+                    d: Icons.close;
+                    width: 14px;
+                    height: 14px;
+                    color: x.has-hover ? Theme.bad : Theme.faint;
+                }
+                x := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => {
+                        State.close-conn(root.c.id);
+                    }
                 }
             }
         }
@@ -53,29 +83,80 @@ component ConnRow inherits Rectangle {
 }
 
 export component ConnsPage inherits VerticalLayout {
-    padding: 24px;
+    padding-left: 32px;
+    padding-right: 32px;
+    padding-top: 26px;
+    padding-bottom: 24px;
     spacing: 16px;
-    HorizontalLayout {
-        spacing: 8px;
-        Title {
-            text: "Подключения: " + State.conns.length;
-            horizontal-stretch: 1;
+    Header {
+        title: "Подключения";
+        Dim {
+            text: State.conns.length;
+            font-size: 14px;
+            vertical-alignment: center;
+            horizontal-stretch: 100;
         }
-        Btn {
-            text: "Закрыть все";
-            clicked => {
-                State.close-all();
+        VerticalLayout {
+            alignment: center;
+            Btn {
+                text: "Закрыть все";
+                enabled: State.conns.length > 0;
+                clicked => {
+                    State.close-all();
+                }
             }
         }
     }
-    if State.conns.length == 0: Dim {
-        text: State.running ? "Активных подключений нет" : "Ядро не запущено";
-    }
-    Scroll {
+    Card {
         vertical-stretch: 1;
-        gap: 6px;
-        for c in State.conns: ConnRow {
-            c: c;
+        VerticalLayout {
+            HorizontalLayout {
+                padding-left: 18px;
+                padding-right: 14px;
+                padding-top: 12px;
+                padding-bottom: 12px;
+                spacing: 12px;
+                Dim {
+                    text: "Приложение";
+                    horizontal-stretch: 2;
+                }
+                Dim {
+                    text: "Назначение";
+                    horizontal-stretch: 3;
+                }
+                Dim {
+                    width: 80px;
+                    text: "Загрузка";
+                }
+                Dim {
+                    width: 80px;
+                    text: "Отдача";
+                }
+                Rectangle {
+                    width: 26px;
+                }
+            }
+            Rectangle {
+                height: 1px;
+                background: Theme.line;
+            }
+            if State.conns.length == 0: Empty {
+                vertical-stretch: 1;
+                icon: Icons.pulse;
+                title: State.running ? "Активных подключений нет" : "Ядро не запущено";
+                text: "Здесь появятся текущие соединения приложений";
+            }
+            if State.conns.length > 0: Scroll {
+                vertical-stretch: 1;
+                gap: 0px;
+                pad: 6px;
+                for c in State.conns: ConnRow {
+                    c: c;
+                }
+            }
         }
+    }
+    Hint {
+        text: "Список обновляется при появлении сетевого трафика";
     }
 }

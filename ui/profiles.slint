@@ -1,24 +1,41 @@
 import { LineEdit } from "std-widgets.slint";
 import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
 import { State, Profile } from "types.slint";
-import { Card, Title, Dim, Btn, Scroll } from "parts.slint";
+import { Card, Header, Head, Dim, Btn, Scroll, Column, Icon, Hint } from "parts.slint";
 
 component ProfileRow inherits Rectangle {
     in property <Profile> p;
-    height: 64px;
-    border-radius: 10px;
-    border-width: root.p.active ? 1px : 0px;
-    border-color: Theme.accent;
-    background: root.p.active ? Theme.accent-soft : ta.has-hover ? Theme.hover : Theme.card;
+    height: 62px;
+    border-radius: Theme.radius;
+    border-width: 1px;
+    border-color: root.p.active ? Theme.accent-line : Theme.line;
+    background: root.p.active ? Theme.accent-soft : ta.has-hover ? Theme.raised : Theme.card;
     ta := TouchArea {
+        mouse-cursor: pointer;
         clicked => {
             State.use-profile(root.p.file);
         }
     }
     HorizontalLayout {
-        padding-left: 16px;
+        padding-left: 14px;
         padding-right: 12px;
-        spacing: 8px;
+        spacing: 12px;
+        VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 32px;
+                height: 32px;
+                border-radius: 8px;
+                background: Theme.raised;
+                Icon {
+                    d: Icons.file;
+                    width: 16px;
+                    height: 16px;
+                    color: root.p.active ? Theme.accent-text : Theme.dim;
+                }
+            }
+        }
         VerticalLayout {
             alignment: center;
             spacing: 2px;
@@ -35,10 +52,30 @@ component ProfileRow inherits Rectangle {
                 overflow: elide;
             }
         }
+        if root.p.active: HorizontalLayout {
+            spacing: 4px;
+            VerticalLayout {
+                alignment: center;
+                Icon {
+                    d: Icons.check;
+                    width: 13px;
+                    height: 13px;
+                    color: Theme.accent-text;
+                }
+            }
+            Text {
+                text: "Выбран";
+                color: Theme.accent-text;
+                font-size: 12px;
+                vertical-alignment: center;
+            }
+        }
         VerticalLayout {
             alignment: center;
             Btn {
+                icon: Icons.refresh;
                 text: "Обновить";
+                height: 28px;
                 enabled: root.p.url != "" && !State.updating;
                 clicked => {
                     State.update-profiles(root.p.name);
@@ -49,6 +86,7 @@ component ProfileRow inherits Rectangle {
             alignment: center;
             Btn {
                 text: "Удалить";
+                height: 28px;
                 clicked => {
                     State.remove-profile(root.p.file);
                 }
@@ -58,56 +96,97 @@ component ProfileRow inherits Rectangle {
 }
 
 export component ProfilesPage inherits VerticalLayout {
-    padding: 24px;
-    spacing: 16px;
-    HorizontalLayout {
-        spacing: 8px;
-        Title {
-            text: "Профили";
-            horizontal-stretch: 1;
-        }
-        Btn {
-            text: State.updating ? "Обновление…" : "Обновить все";
-            enabled: !State.updating;
-            clicked => {
-                State.update-profiles("");
-            }
-        }
-    }
-    Card {
-        HorizontalLayout {
-            padding: 12px;
-            spacing: 8px;
-            name := LineEdit {
-                width: 170px;
-                placeholder-text: "Имя";
-            }
-            url := LineEdit {
-                horizontal-stretch: 1;
-                placeholder-text: "Ссылка на подписку";
-            }
-            VerticalLayout {
-                alignment: center;
-                Btn {
-                    text: "Добавить";
-                    primary: true;
-                    clicked => {
-                        State.add-profile(name.text, url.text);
-                        name.text = "";
-                        url.text = "";
-                    }
+    padding-left: 32px;
+    padding-right: 32px;
+    padding-top: 26px;
+    spacing: 18px;
+    Header {
+        title: "Профили";
+        VerticalLayout {
+            alignment: center;
+            Btn {
+                icon: Icons.refresh;
+                text: State.updating ? "Обновление…" : "Обновить все";
+                enabled: !State.updating;
+                clicked => {
+                    State.update-profiles("");
                 }
             }
         }
     }
-    if State.status != "": Dim {
-        text: State.status;
-        wrap: word-wrap;
-    }
     Scroll {
         vertical-stretch: 1;
-        for p in State.profiles: ProfileRow {
-            p: p;
+        pad: 24px;
+        Column {
+            Card {
+                VerticalLayout {
+                    padding: 16px;
+                    spacing: 10px;
+                    Head {
+                        text: "Добавить профиль";
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        VerticalLayout {
+                            spacing: 4px;
+                            width: 170px;
+                            Dim {
+                                text: "Имя";
+                            }
+                            name := LineEdit {
+                                placeholder-text: "Название профиля";
+                            }
+                        }
+                        VerticalLayout {
+                            spacing: 4px;
+                            horizontal-stretch: 1;
+                            Dim {
+                                text: "Ссылка на подписку";
+                            }
+                            url := LineEdit {
+                                placeholder-text: "https://";
+                            }
+                        }
+                        VerticalLayout {
+                            alignment: end;
+                            Btn {
+                                icon: Icons.plus;
+                                text: "Добавить";
+                                primary: true;
+                                clicked => {
+                                    State.add-profile(name.text, url.text);
+                                    name.text = "";
+                                    url.text = "";
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if State.status != "": Text {
+                text: State.status;
+                color: State.status-bad ? Theme.bad : Theme.dim;
+                font-size: 12px;
+                wrap: word-wrap;
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                padding-top: 4px;
+                alignment: start;
+                Head {
+                    text: "Ваши профили";
+                }
+                Dim {
+                    text: State.profiles.length;
+                    vertical-alignment: center;
+                }
+            }
+            for p in State.profiles: ProfileRow {
+                p: p;
+            }
+            Hint {
+                text: "Нажмите на профиль, чтобы выбрать его. Локальный профиль не обновляется по ссылке.";
+            }
         }
     }
 }

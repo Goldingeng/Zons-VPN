@@ -1,59 +1,93 @@
 import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
 import { State, Node, Group } from "types.slint";
-import { Card, Title, Dim, Btn, Scroll } from "parts.slint";
+import { Card, Header, Dim, Btn, Scroll, Column, Icon } from "parts.slint";
 
-component NodeCard inherits Rectangle {
+component NodeRow inherits Rectangle {
     in property <Node> node;
+    in property <bool> last;
     callback clicked;
-    border-radius: 10px;
+    height: 44px;
+    border-radius: 8px;
     border-width: root.node.selected ? 1px : 0px;
-    border-color: Theme.accent;
-    background: root.node.selected ? Theme.accent-soft : ta.has-hover ? Theme.hover : Theme.bg;
+    border-color: Theme.accent-line;
+    background: root.node.selected ? Theme.accent-soft : ta.has-hover ? Theme.hover : transparent;
+    if !root.last && !root.node.selected: Rectangle {
+        y: parent.height - 1px;
+        height: 1px;
+        background: Theme.line;
+    }
     ta := TouchArea {
+        mouse-cursor: pointer;
         clicked => {
             root.clicked();
         }
     }
-    VerticalLayout {
-        padding: 10px;
-        spacing: 4px;
+    HorizontalLayout {
+        padding-left: 14px;
+        padding-right: 14px;
+        spacing: 12px;
+        VerticalLayout {
+            alignment: center;
+            Rectangle {
+                width: 16px;
+                height: 16px;
+                border-radius: 8px;
+                border-width: 1.5px;
+                border-color: root.node.selected ? Theme.accent-text : Theme.faint;
+                if root.node.selected: Rectangle {
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 4px;
+                    background: Theme.accent-text;
+                }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            Icon {
+                d: root.node.kind == "Direct" || root.node.kind == "Reject" ? Icons.globe : root.node.kind == "Selector" || root.node.kind == "URLTest" || root.node.kind == "Fallback" || root.node.kind == "LoadBalance" ? Icons.nodes : Icons.shield;
+                width: 16px;
+                height: 16px;
+                color: root.node.selected ? Theme.accent-text : Theme.dim;
+            }
+        }
         Text {
             text: root.node.name;
             color: Theme.text;
-            font-size: 13px;
+            font-size: 14px;
+            vertical-alignment: center;
             overflow: elide;
+            horizontal-stretch: 3;
         }
-        HorizontalLayout {
-            spacing: 6px;
-            Dim {
-                text: root.node.kind;
-                overflow: elide;
-                horizontal-stretch: 1;
-            }
-            Text {
-                font-size: 12px;
-                text: root.node.delay < 0 ? "" : root.node.delay == 0 ? "таймаут" : "" + root.node.delay + " ms";
-                color: root.node.delay == 0 ? Theme.bad : root.node.delay < 300 ? Theme.good : root.node.delay < 800 ? Theme.warn : Theme.bad;
-            }
+        Text {
+            text: root.node.kind;
+            color: Theme.dim;
+            font-size: 12px;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+        }
+        Text {
+            width: 70px;
+            font-size: 13px;
+            vertical-alignment: center;
+            horizontal-alignment: right;
+            text: root.node.delay < 0 ? "—" : root.node.delay == 0 ? "таймаут" : root.node.delay + " мс";
+            color: root.node.delay < 0 ? Theme.faint : root.node.delay == 0 ? Theme.bad : root.node.delay < 800 ? Theme.accent-text : Theme.warn;
         }
     }
 }
 
 component GroupCard inherits Card {
     in property <Group> group;
-    property <length> cw: 210px;
-    property <length> ch: 58px;
-    property <length> gap: 8px;
-    property <length> inner: root.width - 32px;
-    property <int> cols: Math.max(1, Math.floor((root.inner + root.gap) / (root.cw + root.gap)));
-    property <length> w: (root.inner - (root.cols - 1) * root.gap) / root.cols;
     VerticalLayout {
-        padding: 16px;
-        spacing: 12px;
+        padding: 18px;
+        spacing: 10px;
         HorizontalLayout {
             spacing: 8px;
             VerticalLayout {
-                spacing: 2px;
+                spacing: 3px;
                 horizontal-stretch: 1;
                 Text {
                     text: root.group.name;
@@ -70,6 +104,7 @@ component GroupCard inherits Card {
             VerticalLayout {
                 alignment: center;
                 Btn {
+                    icon: Icons.refresh;
                     text: root.group.testing ? "Проверка…" : "Задержка";
                     enabled: !root.group.testing;
                     clicked => {
@@ -87,14 +122,32 @@ component GroupCard inherits Card {
                 }
             }
         }
-        if root.group.open: Rectangle {
-            height: Math.max(0, Math.ceil(root.group.nodes.length / root.cols)) * (root.ch + root.gap) - root.gap;
-            for n[i] in root.group.nodes: NodeCard {
+        if root.group.open: HorizontalLayout {
+            padding-left: 14px;
+            padding-right: 14px;
+            padding-top: 4px;
+            Dim {
+                text: "Узел";
+                color: Theme.faint;
+                horizontal-stretch: 3;
+            }
+            Dim {
+                text: "Тип";
+                color: Theme.faint;
+                horizontal-stretch: 1;
+            }
+            Dim {
+                width: 70px;
+                text: "Задержка";
+                color: Theme.faint;
+                horizontal-alignment: right;
+            }
+        }
+        if root.group.open: VerticalLayout {
+            spacing: 2px;
+            for n[i] in root.group.nodes: NodeRow {
                 node: n;
-                x: (i - Math.floor(i / root.cols) * root.cols) * (root.w + root.gap);
-                y: Math.floor(i / root.cols) * (root.ch + root.gap);
-                width: root.w;
-                height: root.ch;
+                last: i == root.group.nodes.length - 1;
                 clicked => {
                     State.select(root.group.name, n.name);
                 }
@@ -104,19 +157,28 @@ component GroupCard inherits Card {
 }
 
 export component ProxiesPage inherits VerticalLayout {
-    padding: 24px;
-    spacing: 16px;
-    Title {
-        text: "Прокси";
+    padding-left: 32px;
+    padding-right: 32px;
+    padding-top: 26px;
+    spacing: 18px;
+    Header {
+        title: "Прокси";
+        Dim {
+            text: State.groups.length == 0 ? "" : State.groups.length == 1 ? "1 группа выбора" : State.groups.length < 5 ? State.groups.length + " группы выбора" : State.groups.length + " групп выбора";
+            vertical-alignment: center;
+        }
     }
     if State.groups.length == 0: Dim {
         text: State.ready ? "В профиле нет групп для выбора" : "Ядро не запущено";
     }
     Scroll {
         vertical-stretch: 1;
-        gap: 12px;
-        for g in State.groups: GroupCard {
-            group: g;
+        pad: 24px;
+        Column {
+            max: 860px;
+            for g in State.groups: GroupCard {
+                group: g;
+            }
         }
     }
 }

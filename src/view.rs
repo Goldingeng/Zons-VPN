@@ -71,6 +71,18 @@ pub fn groups(v: &V, mode: &str) -> Vec<PGroup> {
         .collect()
 }
 
+pub fn resolve(groups: &[PGroup], node: &str) -> (String, i32) {
+    let mut end = node.to_string();
+    for _ in 0..8 {
+        match groups.iter().find(|g| g.name == end) {
+            Some(g) if !g.now.is_empty() => end = g.now.clone(),
+            _ => break,
+        }
+    }
+    let delay = groups.iter().flat_map(|g| &g.nodes).find(|n| n.name == end).map_or(-1, |n| n.delay);
+    (end, delay)
+}
+
 impl Snap {
     pub fn from(v: &V) -> Self {
         let mut apps = BTreeSet::new();
