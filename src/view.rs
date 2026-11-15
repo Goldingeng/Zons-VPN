@@ -1,6 +1,6 @@
 use crate::json::V;
 use crate::{Conn, Group, Node};
-use slint::{ModelRc, SharedString, VecModel};
+use slint::{ModelRc, VecModel};
 use std::collections::{BTreeMap, HashSet};
 
 #[derive(Clone, PartialEq)]
