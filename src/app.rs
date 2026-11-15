@@ -70,6 +70,7 @@ pub fn init(ui: &AppWindow) {
     s.set_tun(st.tun && admin);
     s.set_mode(st.mode.as_str().into());
     s.set_port(st.port as i32);
+    s.set_side(st.side as f32);
     s.set_autostart(autorun::get());
     bind(&s);
     let timer = Timer::default();
@@ -112,6 +113,12 @@ fn bind(s: &State) {
         with(|c| {
             c.dirty = true;
             c.poll();
+        });
+    });
+    s.on_side_changed(|w| {
+        with(|c| {
+            c.st.side = w.round() as u16;
+            c.st.save();
         });
     });
     s.on_set_sysproxy(|v| {

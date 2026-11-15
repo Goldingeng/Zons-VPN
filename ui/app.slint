@@ -21,9 +21,10 @@ export component AppWindow inherits Window {
     background: Theme.bg;
     default-font-family: "Segoe UI";
     in-out property <bool> flip;
+    property <bool> compact: State.side < 150px;
     HorizontalLayout {
         Rectangle {
-            width: 220px;
+            width: State.side;
             background: Theme.side;
             Rectangle {
                 x: parent.width - 1px;
@@ -31,11 +32,11 @@ export component AppWindow inherits Window {
                 background: Theme.line;
             }
             VerticalLayout {
-                padding: 16px;
+                padding: root.compact ? 10px : 16px;
                 padding-top: 24px;
                 spacing: 4px;
                 HorizontalLayout {
-                    padding-left: 8px;
+                    padding-left: root.compact ? (State.side - 44px) / 2 : 8px;
                     spacing: 10px;
                     height: 32px;
                     VerticalLayout {
@@ -47,7 +48,7 @@ export component AppWindow inherits Window {
                             color: Theme.accent-text;
                         }
                     }
-                    Text {
+                    if !root.compact: Text {
                         text: "Zons VPN";
                         color: Theme.text;
                         font-size: 19px;
@@ -69,6 +70,7 @@ export component AppWindow inherits Window {
                     text: item.t;
                     icon: item.d;
                     active: State.page == i;
+                    compact: root.compact;
                     clicked => {
                         State.page = i;
                         State.page-changed(i);
@@ -82,7 +84,7 @@ export component AppWindow inherits Window {
                     border-radius: 8px;
                     background: State.active ? Theme.good-fill : Theme.card;
                     HorizontalLayout {
-                        padding-left: 12px;
+                        padding-left: root.compact ? (State.side - 20px - 10px) / 2 : 12px;
                         spacing: 10px;
                         VerticalLayout {
                             alignment: center;
@@ -93,7 +95,7 @@ export component AppWindow inherits Window {
                                 background: State.active ? #ffffff : Theme.faint;
                             }
                         }
-                        VerticalLayout {
+                        if !root.compact: VerticalLayout {
                             alignment: center;
                             spacing: 2px;
                             Text {
@@ -109,6 +111,22 @@ export component AppWindow inherits Window {
                             }
                         }
                     }
+                }
+            }
+        }
+        Rectangle {
+            width: 0px;
+            drag := TouchArea {
+                x: -3px;
+                width: 7px;
+                mouse-cursor: col-resize;
+                pointer-event(e) => {
+                    if e.kind == PointerEventKind.up {
+                        State.side-changed(State.side);
+                    }
+                }
+                moved => {
+                    State.side = max(64px, min(320px, State.side + self.mouse-x - 3.5px));
                 }
             }
         }
