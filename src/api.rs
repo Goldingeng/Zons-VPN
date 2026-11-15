@@ -90,7 +90,7 @@ impl Api {
 
 fn tun_json(on: bool) -> String {
     if on {
-        "\"tun\":{\"enable\":true,\"stack\":\"mixed\",\"auto-route\":true,\"auto-detect-interface\":true,\"dns-hijack\":[\"any:53\"]}".into()
+        "\"tun\":{\"enable\":true,\"device\":\"ZonsVPN\",\"stack\":\"mixed\",\"auto-route\":true,\"auto-detect-interface\":true,\"dns-hijack\":[\"any:53\"]}".into()
     } else {
         "\"tun\":{\"enable\":false}".into()
     }
