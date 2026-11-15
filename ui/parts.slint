@@ -247,10 +247,29 @@ export component AppRow inherits Rectangle {
         spacing: 8px;
         if root.slot: VerticalLayout {
             alignment: center;
-            Image {
+            Rectangle {
                 width: 20px;
                 height: 20px;
-                source: root.icon;
+                if root.icon.width > 0: Image {
+                    width: 20px;
+                    height: 20px;
+                    source: root.icon;
+                }
+                if root.icon.width == 0: Rectangle {
+                    border-radius: 5px;
+                    background: Theme.hover;
+                    Path {
+                        width: 20px;
+                        height: 20px;
+                        viewbox-width: 24;
+                        viewbox-height: 24;
+                        commands: Icons.ask;
+                        stroke: Theme.dim;
+                        stroke-width: 1.8px;
+                        stroke-line-cap: round;
+                        fill: transparent;
+                    }
+                }
             }
         }
         Label {
