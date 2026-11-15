@@ -38,6 +38,7 @@ struct Ctl {
     down: bool,
     fresh: bool,
     fetching: bool,
+    note: Timer,
     _timer: Timer,
 }
 
@@ -90,6 +91,7 @@ pub fn init(ui: &AppWindow) {
         down: false,
         fresh: false,
         fetching: false,
+        note: Timer::default(),
         _timer: timer,
     };
     CTL.with(|c| *c.borrow_mut() = Some(ctl));
@@ -186,6 +188,19 @@ impl Ctl {
         if err {
             tray::notify("Zons VPN", msg, true);
         }
+    }
+
+    fn note(&self, msg: &str, err: bool) {
+        self.ui(|s| {
+            s.set_note(msg.into());
+            s.set_note_bad(err);
+        });
+        let ui = self.ui.clone();
+        self.note.start(TimerMode::SingleShot, Duration::from_secs(5), move || {
+            if let Some(u) = ui.upgrade() {
+                u.global::<State>().set_note("".into());
+            }
+        });
     }
 
     fn boot(&mut self) {
@@ -646,13 +661,13 @@ impl Ctl {
                 self.show_profiles();
                 self.update(name);
             }
-            Err(e) => self.say(&e, true),
+            Err(e) => self.note(&e, true),
         }
     }
 
     fn remove_profile(&mut self, f: &str) {
         if let Err(e) = profiles::remove(f) {
-            self.say(&e, true);
+            self.note(&e, true);
         }
         if f == self.st.profile {
             self.halt();
@@ -670,8 +685,8 @@ impl Ctl {
         self.updating = true;
         self.ui(|s| {
             s.set_updating(true);
-            s.set_status("Обновление подписок…".into());
-            s.set_status_bad(false);
+            s.set_note("Обновление подписок…".into());
+            s.set_note_bad(false);
         });
         let proxy = self.ok.then_some(self.st.port);
         thread::spawn(move || {
@@ -684,8 +699,8 @@ impl Ctl {
         self.updating = false;
         self.ui(|s| s.set_updating(false));
         match &r {
-            Ok(n) => self.say(&format!("Обновлено подписок: {n}"), false),
-            Err(e) => self.say(e, true),
+            Ok(n) => self.note(&format!("Обновлено подписок: {n}"), false),
+            Err(e) => self.note(e, true),
         }
         let before = self.st.profile.clone();
         self.pick();
