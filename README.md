@@ -18,7 +18,7 @@ Slint 1.17 формально требует rustc 1.92, но собираетс
 
 ## Установка
 
-Достаточно одного `clashtray.exe`. Если рядом нет `mihomo.exe`, программа сама скачает его с https://github.com/MetaCubeX/mihomo/releases. Для TUN рядом нужен `wintun.dll`.
+Достаточно одного `clashtray.exe`. Если рядом нет `mihomo.exe`, программа сама скачает его с https://github.com/MetaCubeX/mihomo/releases. Для TUN ничего класть не нужно: драйвер Wintun встроен в mihomo, достаточно запустить программу от администратора.
 
 ## Обновление ядра
 
