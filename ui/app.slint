@@ -77,29 +77,36 @@ export component AppWindow inherits Window {
                 Rectangle {
                     vertical-stretch: 1;
                 }
-                HorizontalLayout {
-                    padding-left: 8px;
-                    spacing: 8px;
-                    VerticalLayout {
-                        padding-top: 6px;
-                        Rectangle {
-                            width: 7px;
-                            height: 7px;
-                            border-radius: 4px;
-                            background: State.ready ? Theme.good : State.running ? Theme.warn : Theme.faint;
+                Rectangle {
+                    height: 54px;
+                    border-radius: 8px;
+                    background: State.active ? Theme.good-fill : Theme.card;
+                    HorizontalLayout {
+                        padding-left: 12px;
+                        spacing: 10px;
+                        VerticalLayout {
+                            alignment: center;
+                            Rectangle {
+                                width: 10px;
+                                height: 10px;
+                                border-radius: 5px;
+                                background: State.active ? #ffffff : Theme.faint;
+                            }
                         }
-                    }
-                    VerticalLayout {
-                        spacing: 2px;
-                        Text {
-                            text: State.ready ? "Ядро работает" : State.running ? "Запуск ядра…" : "Ядро остановлено";
-                            color: Theme.text;
-                            font-size: 12px;
-                        }
-                        Text {
-                            text: "mihomo";
-                            color: Theme.faint;
-                            font-size: 11px;
+                        VerticalLayout {
+                            alignment: center;
+                            spacing: 2px;
+                            Text {
+                                text: State.active ? "VPN включён" : "VPN выключен";
+                                color: State.active ? #ffffff : Theme.text;
+                                font-size: 14px;
+                                font-weight: 600;
+                            }
+                            Text {
+                                text: State.ready ? "Ядро работает" : State.running ? "Запуск ядра…" : "Ядро остановлено";
+                                color: State.active ? #d5f3e3 : Theme.faint;
+                                font-size: 11px;
+                            }
                         }
                     }
                 }
