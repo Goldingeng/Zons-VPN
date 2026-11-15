@@ -2,6 +2,7 @@ use crate::ffi::*;
 use crate::util::w;
 use slint::{Rgba8Pixel, SharedPixelBuffer};
 use std::mem::{size_of, zeroed};
+use std::ffi::c_void;
 use std::ptr::null_mut;
 
 pub type Px = SharedPixelBuffer<Rgba8Pixel>;
@@ -73,4 +74,43 @@ fn read(dc: HANDLE, info: &ICONINFO) -> Option<Px> {
         *d = Rgba8Pixel { r: s[2], g: s[1], b: s[0], a: s[3] };
     }
     Some(px)
+}
+
+pub fn title(path: &str) -> Option<String> {
+    if path.is_empty() {
+        return None;
+    }
+    let file = w(path);
+    let size = unsafe { GetFileVersionInfoSizeW(file.as_ptr(), null_mut()) };
+    if size == 0 {
+        return None;
+    }
+    let mut data = vec![0u8; size as usize];
+    if unsafe { GetFileVersionInfoW(file.as_ptr(), 0, size, data.as_mut_ptr().cast()) } == 0 {
+        return None;
+    }
+    let langs = query(&data, "\\VarFileInfo\\Translation");
+    let mut ids: Vec<String> = langs.chunks_exact(4).map(|c| format!("{:04x}{:04x}", u16::from_le_bytes([c[0], c[1]]), u16::from_le_bytes([c[2], c[3]]))).collect();
+    ids.extend(["040904b0".into(), "040904e4".into(), "000004b0".into()]);
+    for key in ["FileDescription", "ProductName"] {
+        for id in &ids {
+            let raw = query(&data, &format!("\\StringFileInfo\\{id}\\{key}"));
+            let u: Vec<u16> = raw.chunks_exact(2).map(|c| u16::from_le_bytes([c[0], c[1]])).take_while(|&c| c != 0).collect();
+            let t = String::from_utf16_lossy(&u).trim().to_string();
+            if !t.is_empty() {
+                return Some(t);
+            }
+        }
+    }
+    None
+}
+
+fn query(data: &[u8], sub: &str) -> Vec<u8> {
+    let mut p: *mut c_void = null_mut();
+    let mut len = 0u32;
+    if unsafe { VerQueryValueW(data.as_ptr().cast(), w(sub).as_ptr(), &mut p, &mut len) } == 0 || p.is_null() {
+        return Vec::new();
+    }
+    let n = if sub.contains("Translation") { len as usize } else { len as usize * 2 };
+    unsafe { std::slice::from_raw_parts(p as *const u8, n).to_vec() }
 }

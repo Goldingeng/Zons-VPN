@@ -11,7 +11,7 @@ use slint::winit_030::winit::event::WindowEvent;
 use slint::winit_030::{EventResult, WinitWindowAccessor};
 use slint::{ComponentHandle, Image, ModelRc, Timer, TimerMode, VecModel, Weak};
 use std::cell::RefCell;
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::Path;
 use std::ptr::{null, null_mut};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -30,7 +30,7 @@ struct Ctl {
     seeded: bool,
     testing: HashSet<String>,
     groups: Vec<PGroup>,
-    seen: BTreeSet<String>,
+    seen: BTreeMap<String, String>,
     last: Option<(u64, u64, Instant)>,
     busy: Arc<AtomicBool>,
     dirty: bool,
@@ -42,6 +42,7 @@ struct Ctl {
     note: Timer,
     picks: Vec<(String, String, String)>,
     icons: HashMap<String, Image>,
+    titles: HashMap<String, String>,
     query: String,
     _timer: Timer,
 }
@@ -86,7 +87,7 @@ pub fn init(ui: &AppWindow) {
         seeded: false,
         testing: HashSet::new(),
         groups: Vec::new(),
-        seen: BTreeSet::new(),
+        seen: BTreeMap::new(),
         last: None,
         busy: Arc::new(AtomicBool::new(false)),
         dirty: false,
@@ -98,6 +99,7 @@ pub fn init(ui: &AppWindow) {
         note: Timer::default(),
         picks: Vec::new(),
         icons: HashMap::new(),
+        titles: HashMap::new(),
         query: String::new(),
         _timer: timer,
     };
@@ -622,8 +624,14 @@ impl Ctl {
             None => (0.0, 0.0),
         };
         self.last = Some((sn.down, sn.up, now));
-        self.seen.extend(sn.apps);
-        let apps: Vec<String> = self.seen.iter().cloned().filter(|a| !self.st.bypass.iter().any(|b| b.eq_ignore_ascii_case(a))).collect();
+        for (n, p) in sn.apps {
+            let slot = self.seen.entry(n).or_default();
+            if slot.is_empty() {
+                *slot = p;
+            }
+        }
+        let paths: Vec<String> = self.seen.values().cloned().collect();
+        self.fetch(paths);
         let on_conns = self.ui.upgrade().is_some_and(|u| u.global::<State>().get_page() == 4);
         let conns = on_conns.then(|| view::to_conns(sn.conns));
         let (down, up) = (sn.down as f64, sn.up as f64);
@@ -632,11 +640,11 @@ impl Ctl {
             s.set_up_speed(view::rate(us).into());
             s.set_down_total(view::size(down).into());
             s.set_up_total(view::size(up).into());
-            s.set_seen_apps(view::strings(&apps));
             if let Some(m) = conns {
                 s.set_conns(m);
             }
         });
+        self.show_seen();
     }
 
     fn show_profiles(&self) {
@@ -726,10 +734,46 @@ impl Ctl {
         }
     }
 
-    fn show_bypass(&self) {
-        let v = view::strings(&self.st.bypass);
-        self.ui(|s| s.set_bypass(v));
+    fn show_bypass(&mut self) {
+        let paths: Vec<String> = self.st.known.iter().map(|k| k.1.clone()).collect();
+        self.fetch(paths);
+        self.show_lists();
+    }
+
+    fn show_lists(&self) {
+        let v: Vec<Pick> = self
+            .st
+            .bypass
+            .iter()
+            .map(|x| {
+                let k = self.st.known.iter().find(|k| k.0.eq_ignore_ascii_case(x));
+                self.entry(x, k.map_or("", |k| k.1.as_str()), k.map_or("", |k| k.2.as_str()))
+            })
+            .collect();
+        self.ui(|s| s.set_bypass(ModelRc::new(VecModel::from(v))));
+        self.show_seen();
         self.show_picks();
+    }
+
+    fn entry(&self, exe: &str, path: &str, name: &str) -> Pick {
+        let key = path.to_lowercase();
+        let title = if !name.is_empty() { name } else { self.titles.get(&key).map_or(exe, String::as_str) };
+        Pick {
+            label: title.into(),
+            exe: exe.into(),
+            hint: if title.eq_ignore_ascii_case(exe) { "".into() } else { exe.into() },
+            icon: self.icons.get(&key).cloned().unwrap_or_default(),
+        }
+    }
+
+    fn show_seen(&self) {
+        let v: Vec<Pick> = self
+            .seen
+            .iter()
+            .filter(|(n, _)| !self.st.bypass.iter().any(|b| b.eq_ignore_ascii_case(n)))
+            .map(|(n, p)| self.entry(n, p, ""))
+            .collect();
+        self.ui(|s| s.set_seen_apps(ModelRc::new(VecModel::from(v))));
     }
 
     fn open_picks(&mut self, kind: i32) {
@@ -747,14 +791,25 @@ impl Ctl {
     }
 
     fn picked(&mut self, kind: i32, v: Vec<(String, String, String)>) {
-        let Some(u) = self.ui.upgrade().filter(|u| u.global::<State>().get_pick_kind() == kind) else { return };
+        if self.ui.upgrade().filter(|u| u.global::<State>().get_pick_kind() == kind).is_none() {
+            return;
+        }
+        let paths: Vec<String> = v.iter().map(|p| p.2.clone()).collect();
         self.picks = v;
         self.ui(|s| s.set_pick_busy(false));
         self.show_picks();
+        self.fetch(paths);
+    }
+
+    fn fetch(&mut self, paths: Vec<String>) {
+        let Some(u) = self.ui.upgrade() else { return };
         if self.icons.len() > 500 {
             self.icons.clear();
+            self.titles.clear();
         }
-        let need: Vec<String> = self.picks.iter().map(|p| p.2.to_lowercase()).filter(|p| !p.is_empty() && !self.icons.contains_key(p)).collect();
+        let mut need: Vec<String> = paths.iter().map(|p| p.to_lowercase()).filter(|p| !self.icons.contains_key(p)).collect();
+        need.sort();
+        need.dedup();
         if need.is_empty() {
             return;
         }
@@ -763,16 +818,28 @@ impl Ctl {
         }
         let size = (20.0 * u.window().scale_factor()).round() as u32;
         thread::spawn(move || {
-            let got: Vec<(String, Px)> = need.into_iter().filter_map(|p| icon::load(&p, size).map(|i| (p, i))).collect();
+            let got: Vec<(String, Option<Px>, Option<String>)> = need
+                .into_iter()
+                .map(|p| {
+                    let i = icon::load(&p, size);
+                    let t = icon::title(&p);
+                    (p, i, t)
+                })
+                .collect();
             later(move |c| c.iconed(got));
         });
     }
 
-    fn iconed(&mut self, got: Vec<(String, Px)>) {
-        for (p, i) in got {
-            self.icons.insert(p, Image::from_rgba8(i));
+    fn iconed(&mut self, got: Vec<(String, Option<Px>, Option<String>)>) {
+        for (p, i, t) in got {
+            if let Some(i) = i {
+                self.icons.insert(p.clone(), Image::from_rgba8(i));
+            }
+            if let Some(t) = t {
+                self.titles.insert(p, t);
+            }
         }
-        self.show_picks();
+        self.show_lists();
     }
 
     fn find_picks(&mut self, q: String) {
@@ -785,20 +852,16 @@ impl Ctl {
             .picks
             .iter()
             .filter(|(_, x, _)| !self.st.bypass.iter().any(|b| b.eq_ignore_ascii_case(x)))
-            .filter(|(n, x, _)| n.to_lowercase().contains(&self.query) || x.to_lowercase().contains(&self.query))
-            .map(|(n, x, p)| Pick {
-                label: if n == x { n.as_str().into() } else { format!("{n} · {x}").into() },
-                exe: x.as_str().into(),
-                icon: self.icons.get(&p.to_lowercase()).cloned().unwrap_or_default(),
-            })
+            .map(|(n, x, p)| self.entry(x, p, if n == x { "" } else { n }))
+            .filter(|e| e.label.to_lowercase().contains(&self.query) || e.exe.to_lowercase().contains(&self.query))
             .collect();
         self.ui(|s| s.set_picks(ModelRc::new(VecModel::from(v))));
     }
 
     fn add_app(&mut self, a: &str) {
-        let a = a.trim().trim_matches('"');
-        let a = a.rsplit(['\\', '/']).next().unwrap_or("");
-        let a: String = a.chars().filter(|c| !matches!(c, ',' | '"' | '\'' | '\n' | '\r' | '|')).collect();
+        let full = a.trim().trim_matches('"');
+        let a = full.rsplit(['\\', '/']).next().unwrap_or("");
+        let a: String = a.chars().filter(|c| !matches!(c, ',' | '"' | '\'' | '\n' | '\r' | '|' | '>')).collect();
         let a = a.trim();
         if a.is_empty() {
             return;
@@ -806,6 +869,21 @@ impl Ctl {
         let a = if a.contains('.') { a.to_string() } else { format!("{a}.exe") };
         if self.st.bypass.iter().any(|b| b.eq_ignore_ascii_case(&a)) {
             return;
+        }
+        let picked = self.picks.iter().find(|p| p.1.eq_ignore_ascii_case(&a));
+        let path = if full.contains(['\\', '/']) {
+            full.to_string()
+        } else {
+            picked
+                .map(|p| p.2.clone())
+                .filter(|p| !p.is_empty())
+                .or_else(|| self.seen.iter().find(|s| s.0.eq_ignore_ascii_case(&a)).map(|s| s.1.clone()))
+                .unwrap_or_default()
+        };
+        let name = picked.filter(|p| p.0 != p.1).map(|p| p.0.clone()).unwrap_or_default();
+        let path: String = path.chars().filter(|c| !matches!(c, '|' | '>')).collect();
+        if !path.is_empty() || !name.is_empty() {
+            self.st.known.push((a.clone(), path, name.replace(['|', '>'], "")));
         }
         self.st.bypass.push(a);
         self.st.bypass.sort_by_key(|s| s.to_lowercase());
@@ -815,7 +893,8 @@ impl Ctl {
     }
 
     fn remove_app(&mut self, a: &str) {
-        self.st.bypass.retain(|b| b != a);
+        self.st.bypass.retain(|b| !b.eq_ignore_ascii_case(a));
+        self.st.known.retain(|k| !k.0.eq_ignore_ascii_case(a));
         self.st.save();
         self.show_bypass();
         self.reload();

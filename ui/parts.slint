@@ -230,6 +230,7 @@ export component Empty inherits VerticalLayout {
 
 export component AppRow inherits Rectangle {
     in property <string> name;
+    in property <string> hint;
     in property <string> action;
     in property <image> icon;
     in property <bool> slot;
@@ -254,6 +255,13 @@ export component AppRow inherits Rectangle {
             text: root.name;
             overflow: elide;
             horizontal-stretch: 1;
+        }
+        if root.hint != "": VerticalLayout {
+            alignment: center;
+            Dim {
+                text: root.hint;
+                overflow: elide;
+            }
         }
         VerticalLayout {
             alignment: center;

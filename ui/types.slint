@@ -34,6 +34,7 @@ export struct Conn {
 export struct Pick {
     label: string,
     exe: string,
+    hint: string,
     icon: image,
 }
 
@@ -58,8 +59,8 @@ export global State {
     in property <[Group]> groups;
     in property <[Profile]> profiles;
     in property <[Conn]> conns;
-    in property <[string]> bypass;
-    in property <[string]> seen-apps;
+    in property <[Pick]> bypass;
+    in property <[Pick]> seen-apps;
     in property <bool> updating;
     in property <string> status;
     in property <bool> status-bad;

@@ -1,7 +1,7 @@
 use crate::json::V;
 use crate::{Conn, Group, Node};
 use slint::{ModelRc, SharedString, VecModel};
-use std::collections::{BTreeSet, HashSet};
+use std::collections::{BTreeMap, HashSet};
 
 #[derive(Clone, PartialEq)]
 pub struct PNode {
@@ -33,7 +33,7 @@ pub struct Snap {
     pub down: u64,
     pub up: u64,
     pub conns: Vec<PConn>,
-    pub apps: Vec<String>,
+    pub apps: Vec<(String, String)>,
 }
 
 const KINDS: [&str; 3] = ["Selector", "URLTest", "Fallback"];
@@ -85,7 +85,7 @@ pub fn resolve(groups: &[PGroup], node: &str) -> (String, i32) {
 
 impl Snap {
     pub fn from(v: &V) -> Self {
-        let mut apps = BTreeSet::new();
+        let mut apps = BTreeMap::new();
         let conns = v
             .get("connections")
             .arr()
@@ -99,7 +99,10 @@ impl Snap {
                 };
                 let process = m.get("process").str();
                 if !process.is_empty() {
-                    apps.insert(process.to_string());
+                    let slot: &mut String = apps.entry(process.to_string()).or_default();
+                    if slot.is_empty() {
+                        *slot = m.get("processPath").str().to_string();
+                    }
                 }
                 let chain: Vec<&str> = c.get("chains").arr().iter().rev().map(V::str).collect();
                 let rule = match c.get("rulePayload").str() {
@@ -150,10 +153,6 @@ pub fn size(b: f64) -> String {
 
 pub fn rate(b: f64) -> String {
     format!("{}/с", size(b))
-}
-
-pub fn strings(v: &[String]) -> ModelRc<SharedString> {
-    ModelRc::new(VecModel::from(v.iter().map(|s| SharedString::from(s.as_str())).collect::<Vec<_>>()))
 }
 
 pub fn to_groups(v: &[PGroup], open: &HashSet<String>, testing: &HashSet<String>) -> ModelRc<Group> {

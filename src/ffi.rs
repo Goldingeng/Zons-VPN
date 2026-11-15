@@ -243,6 +243,13 @@ extern "system" {
     pub fn GetIconInfo(i: HICON, info: *mut ICONINFO) -> i32;
 }
 
+#[link(name = "version")]
+extern "system" {
+    pub fn GetFileVersionInfoSizeW(file: *const u16, handle: *mut u32) -> u32;
+    pub fn GetFileVersionInfoW(file: *const u16, handle: u32, len: u32, data: *mut c_void) -> i32;
+    pub fn VerQueryValueW(block: *const c_void, sub: *const u16, out: *mut *mut c_void, len: *mut u32) -> i32;
+}
+
 #[link(name = "comdlg32")]
 extern "system" {
     pub fn GetOpenFileNameW(ofn: *mut OPENFILENAMEW) -> i32;
