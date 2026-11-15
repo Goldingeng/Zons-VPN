@@ -1,15 +1,15 @@
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
-import { State, Node, Group, Profile, Conn } from "types.slint";
+import { State, Node, Group, Profile, Conn, Pick } from "types.slint";
 import { NavItem, Icon } from "parts.slint";
 import { HomePage } from "home.slint";
 import { ProxiesPage } from "proxies.slint";
 import { ProfilesPage } from "profiles.slint";
-import { BypassPage } from "bypass.slint";
+import { BypassPage, PickPanel } from "bypass.slint";
 import { ConnsPage } from "conns.slint";
 import { SettingsPage } from "settings.slint";
 
-export { State, Node, Group, Profile, Conn }
+export { State, Node, Group, Profile, Conn, Pick }
 
 export component AppWindow inherits Window {
     title: "Zons VPN";
@@ -128,6 +128,10 @@ export component AppWindow inherits Window {
                 height: parent.height;
             }
             if State.page == 5: SettingsPage {
+                width: parent.width;
+                height: parent.height;
+            }
+            if State.page == 3 && State.pick-kind > 0: PickPanel {
                 width: parent.width;
                 height: parent.height;
             }
