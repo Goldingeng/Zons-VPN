@@ -8,10 +8,44 @@ use std::ptr::null_mut;
 pub type Px = SharedPixelBuffer<Rgba8Pixel>;
 
 pub fn load(path: &str, size: u32) -> Option<Px> {
-    extract(path, 0, size).or_else(|| {
-        let root = std::env::var("SystemRoot").unwrap_or_else(|_| "C:\\Windows".into());
-        extract(&format!("{root}\\System32\\shell32.dll"), 2, size)
-    })
+    let big = (size * 2).clamp(48, 256);
+    let src = extract(path, 0, big).or_else(|| {
+        let root = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
+        extract(&format!(r"{root}\System32\shell32.dll"), 2, big)
+    })?;
+    Some(shrink(&src, size))
+}
+
+fn shrink(src: &Px, size: u32) -> Px {
+    let (sw, sh) = (src.width(), src.height());
+    if sw <= size || sh <= size {
+        return src.clone();
+    }
+    let data = src.as_slice();
+    let mut out = Px::new(size, size);
+    for (i, d) in out.make_mut_slice().iter_mut().enumerate() {
+        let (x, y) = (i as u32 % size, i as u32 / size);
+        let (x0, x1) = (x * sw / size, ((x + 1) * sw / size).max(x * sw / size + 1));
+        let (y0, y1) = (y * sh / size, ((y + 1) * sh / size).max(y * sh / size + 1));
+        let (mut r, mut g, mut b, mut a, mut n) = (0u32, 0u32, 0u32, 0u32, 0u32);
+        for yy in y0..y1 {
+            for xx in x0..x1 {
+                let p = data[(yy * sw + xx) as usize];
+                let pa = p.a as u32;
+                r += p.r as u32 * pa;
+                g += p.g as u32 * pa;
+                b += p.b as u32 * pa;
+                a += pa;
+                n += 1;
+            }
+        }
+        *d = if a == 0 {
+            Rgba8Pixel { r: 0, g: 0, b: 0, a: 0 }
+        } else {
+            Rgba8Pixel { r: (r / a) as u8, g: (g / a) as u8, b: (b / a) as u8, a: (a / n) as u8 }
+        };
+    }
+    out
 }
 
 fn extract(path: &str, index: i32, size: u32) -> Option<Px> {
