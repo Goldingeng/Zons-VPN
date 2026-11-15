@@ -5,7 +5,7 @@ use crate::settings::Settings;
 use crate::tray::{self, Ev};
 use crate::util::{base, exe, near_port, port_open, w, wp, work};
 use crate::view::{self, PGroup, Snap};
-use crate::{autorun, coreup, dialog, profiles, sysproxy, AppWindow, Profile, State};
+use crate::{autorun, coreup, dialog, pick, profiles, sysproxy, AppWindow, Pick, Profile, State};
 use slint::winit_030::winit::event::WindowEvent;
 use slint::winit_030::{EventResult, WinitWindowAccessor};
 use slint::{ComponentHandle, ModelRc, Timer, TimerMode, VecModel, Weak};
@@ -39,6 +39,8 @@ struct Ctl {
     fresh: bool,
     fetching: bool,
     note: Timer,
+    picks: Vec<(String, String)>,
+    query: String,
     _timer: Timer,
 }
 
@@ -92,6 +94,8 @@ pub fn init(ui: &AppWindow) {
         fresh: false,
         fetching: false,
         note: Timer::default(),
+        picks: Vec::new(),
+        query: String::new(),
         _timer: timer,
     };
     CTL.with(|c| *c.borrow_mut() = Some(ctl));
@@ -147,6 +151,12 @@ fn bind(s: &State) {
         if let Some(a) = dialog::pick_exe() {
             with(|c| c.add_app(&a));
         }
+    });
+    s.on_open_picks(|k| {
+        with(|c| c.open_picks(k));
+    });
+    s.on_find_picks(|q| {
+        with(|c| c.find_picks(q.to_string()));
     });
     s.on_close_conn(|id| {
         with(|c| c.close(Some(id.to_string())));
@@ -716,6 +726,46 @@ impl Ctl {
     fn show_bypass(&self) {
         let v = view::strings(&self.st.bypass);
         self.ui(|s| s.set_bypass(v));
+        self.show_picks();
+    }
+
+    fn open_picks(&mut self, kind: i32) {
+        self.picks.clear();
+        self.query.clear();
+        self.ui(|s| {
+            s.set_pick_kind(kind);
+            s.set_pick_busy(true);
+        });
+        self.show_picks();
+        thread::spawn(move || {
+            let v = if kind == 1 { pick::steam() } else { pick::running() };
+            later(move |c| c.picked(kind, v));
+        });
+    }
+
+    fn picked(&mut self, kind: i32, v: Vec<(String, String)>) {
+        if self.ui.upgrade().is_none_or(|u| u.global::<State>().get_pick_kind() != kind) {
+            return;
+        }
+        self.picks = v;
+        self.ui(|s| s.set_pick_busy(false));
+        self.show_picks();
+    }
+
+    fn find_picks(&mut self, q: String) {
+        self.query = q.trim().to_lowercase();
+        self.show_picks();
+    }
+
+    fn show_picks(&self) {
+        let v: Vec<Pick> = self
+            .picks
+            .iter()
+            .filter(|(_, x)| !self.st.bypass.iter().any(|b| b.eq_ignore_ascii_case(x)))
+            .filter(|(n, x)| n.to_lowercase().contains(&self.query) || x.to_lowercase().contains(&self.query))
+            .map(|(n, x)| Pick { label: if n == x { n.as_str().into() } else { format!("{n} · {x}").into() }, exe: x.as_str().into() })
+            .collect();
+        self.ui(|s| s.set_picks(ModelRc::new(VecModel::from(v))));
     }
 
     fn add_app(&mut self, a: &str) {

@@ -31,6 +31,11 @@ export struct Conn {
     down: string,
 }
 
+export struct Pick {
+    label: string,
+    exe: string,
+}
+
 export global State {
     in-out property <int> page: 0;
     in property <bool> running;
@@ -61,6 +66,9 @@ export global State {
     in-out property <int> port: 7890;
     in-out property <bool> autostart;
     in property <string> core-version;
+    in-out property <int> pick-kind;
+    in property <bool> pick-busy;
+    in property <[Pick]> picks;
 
     callback page-changed(int);
     callback set-sysproxy(bool);
@@ -76,6 +84,8 @@ export global State {
     callback add-app(string);
     callback remove-app(string);
     callback browse-app();
+    callback open-picks(int);
+    callback find-picks(string);
     callback close-conn(string);
     callback close-all();
     callback set-port(int);

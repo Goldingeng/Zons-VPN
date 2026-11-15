@@ -41,6 +41,26 @@ export component BypassPage inherits VerticalLayout {
     spacing: 16px;
     Header {
         title: "Мимо VPN";
+        VerticalLayout {
+            alignment: center;
+            Btn {
+                icon: Icons.grid;
+                text: "Игры Steam";
+                clicked => {
+                    State.open-picks(1);
+                }
+            }
+        }
+        VerticalLayout {
+            alignment: center;
+            Btn {
+                icon: Icons.pulse;
+                text: "Запущенные";
+                clicked => {
+                    State.open-picks(2);
+                }
+            }
+        }
     }
     Card {
         HorizontalLayout {
@@ -118,6 +138,77 @@ export component BypassPage inherits VerticalLayout {
                     action: "Добавить";
                     clicked => {
                         State.add-app(a);
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component PickPanel inherits Rectangle {
+    background: #000000a0;
+    TouchArea {
+        clicked => {
+            State.pick-kind = 0;
+        }
+    }
+    Card {
+        width: min(560px, root.width - 64px);
+        height: root.height - 80px;
+        TouchArea { }
+        VerticalLayout {
+            HorizontalLayout {
+                padding: 14px;
+                spacing: 8px;
+                Head {
+                    text: State.pick-kind == 1 ? "Игры Steam" : "Запущенные программы";
+                    vertical-alignment: center;
+                    horizontal-stretch: 1;
+                }
+                Btn {
+                    icon: Icons.close;
+                    text: "Закрыть";
+                    clicked => {
+                        State.pick-kind = 0;
+                    }
+                }
+            }
+            HorizontalLayout {
+                padding-left: 14px;
+                padding-right: 14px;
+                padding-bottom: 10px;
+                LineEdit {
+                    placeholder-text: "Поиск";
+                    edited(t) => {
+                        State.find-picks(t);
+                    }
+                    init => {
+                        self.focus();
+                    }
+                }
+            }
+            Rectangle {
+                height: 1px;
+                background: Theme.line;
+            }
+            VerticalLayout {
+                padding: 6px;
+                vertical-stretch: 1;
+                if State.picks.length == 0: Empty {
+                    vertical-stretch: 1;
+                    icon: State.pick-kind == 1 ? Icons.grid : Icons.pulse;
+                    title: State.pick-busy ? "Ищу…" : "Ничего не найдено";
+                    text: State.pick-busy ? "" : State.pick-kind == 1 ? "Steam не найден или все игры уже в исключениях" : "Нет подходящих программ";
+                }
+                if State.picks.length > 0: Scroll {
+                    vertical-stretch: 1;
+                    gap: 2px;
+                    for p in State.picks: AppRow {
+                        name: p.label;
+                        action: "Добавить";
+                        clicked => {
+                            State.add-app(p.exe);
+                        }
                     }
                 }
             }

@@ -11,6 +11,7 @@ mod engine;
 mod ffi;
 mod json;
 mod net;
+mod pick;
 mod profiles;
 mod settings;
 mod sysproxy;
