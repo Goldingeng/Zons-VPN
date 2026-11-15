@@ -419,7 +419,7 @@ impl Ctl {
     }
 
     fn set_mode(&mut self, m: &str) {
-        if !matches!(m, "rule" | "global" | "direct") {
+        if !matches!(m, "rule" | "global") {
             return;
         }
         self.st.mode = m.into();

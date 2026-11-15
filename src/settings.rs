@@ -36,7 +36,7 @@ impl Settings {
             let v = v.trim();
             match k.trim() {
                 "profile" => s.profile = v.into(),
-                "mode" if matches!(v, "rule" | "global" | "direct") => s.mode = v.into(),
+                "mode" => s.mode = if v == "global" { "global".into() } else { "rule".into() },
                 "port" => s.port = v.parse().unwrap_or(7890),
                 "sysproxy" => s.sysproxy = v == "1",
                 "tun" => s.tun = v == "1",
