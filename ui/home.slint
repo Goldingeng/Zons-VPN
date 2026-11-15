@@ -410,13 +410,6 @@ export component HomePage inherits VerticalLayout {
                                 State.set-mode("global");
                             }
                         }
-                        Seg {
-                            text: "Напрямую";
-                            active: State.mode == "direct";
-                            clicked => {
-                                State.set-mode("direct");
-                            }
-                        }
                     }
                 }
             }
