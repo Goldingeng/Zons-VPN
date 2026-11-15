@@ -43,6 +43,7 @@ struct Ctl {
     picks: Vec<(String, String, String)>,
     icons: HashMap<String, Image>,
     titles: HashMap<String, String>,
+    size: u32,
     query: String,
     _timer: Timer,
 }
@@ -101,6 +102,7 @@ pub fn init(ui: &AppWindow) {
         picks: Vec::new(),
         icons: HashMap::new(),
         titles: HashMap::new(),
+        size: 0,
         query: String::new(),
         _timer: timer,
     };
@@ -588,6 +590,7 @@ impl Ctl {
 
     fn poll(&mut self) {
         self.tick = self.tick.wrapping_add(1);
+        self.rescale();
         if self.ok && !self.core.alive() {
             self.ok = false;
             self.fail("Ядро неожиданно завершилось. Подробности: Настройки → Журнал ядра");
@@ -850,8 +853,28 @@ impl Ctl {
         self.fetch(paths);
     }
 
+    fn px(&self) -> u32 {
+        self.ui.upgrade().map_or(0, |u| (20.0 * u.window().scale_factor()).round() as u32)
+    }
+
+    fn rescale(&mut self) {
+        let size = self.px();
+        if size == self.size || size == 0 {
+            return;
+        }
+        self.size = size;
+        self.icons.clear();
+        let mut paths: Vec<String> = self.st.known.iter().map(|k| k.1.clone()).collect();
+        paths.extend(self.seen.values().cloned());
+        paths.extend(self.picks.iter().map(|p| p.2.clone()));
+        self.fetch(paths);
+        self.show_lists();
+    }
+
     fn fetch(&mut self, paths: Vec<String>) {
-        let Some(u) = self.ui.upgrade() else { return };
+        if self.px() != self.size {
+            return self.rescale();
+        }
         if self.icons.len() > 500 {
             self.icons.clear();
             self.titles.clear();
@@ -865,7 +888,7 @@ impl Ctl {
         for p in &need {
             self.icons.insert(p.clone(), Image::default());
         }
-        let size = (20.0 * u.window().scale_factor()).round() as u32;
+        let size = self.size;
         thread::spawn(move || {
             let got: Vec<(String, Option<Px>, Option<String>)> = need
                 .into_iter()
@@ -875,11 +898,14 @@ impl Ctl {
                     (p, i, t)
                 })
                 .collect();
-            later(move |c| c.iconed(got));
+            later(move |c| c.iconed(size, got));
         });
     }
 
-    fn iconed(&mut self, got: Vec<(String, Option<Px>, Option<String>)>) {
+    fn iconed(&mut self, size: u32, got: Vec<(String, Option<Px>, Option<String>)>) {
+        if size != self.size {
+            return;
+        }
         for (p, i, t) in got {
             if let Some(i) = i {
                 self.icons.insert(p.clone(), Image::from_rgba8(i));

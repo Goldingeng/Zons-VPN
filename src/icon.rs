@@ -8,11 +8,8 @@ use std::ptr::null_mut;
 pub type Px = SharedPixelBuffer<Rgba8Pixel>;
 
 pub fn load(path: &str, size: u32) -> Option<Px> {
-    let big = (size * 2).clamp(48, 256);
-    let src = extract(path, 0, big).or_else(|| {
-        let root = std::env::var("SystemRoot").unwrap_or_else(|_| r"C:\Windows".into());
-        extract(&format!(r"{root}\System32\shell32.dll"), 2, big)
-    })?;
+    let big = size * (48 / size.max(1) + 1).max(2);
+    let src = extract(path, 0, big)?;
     Some(shrink(&src, size))
 }
 
