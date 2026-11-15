@@ -204,6 +204,8 @@ export component PickPanel inherits Rectangle {
                     gap: 2px;
                     for p in State.picks: AppRow {
                         name: p.label;
+                        icon: p.icon;
+                        slot: true;
                         action: "Добавить";
                         clicked => {
                             State.add-app(p.exe);

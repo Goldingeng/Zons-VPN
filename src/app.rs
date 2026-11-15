@@ -5,12 +5,13 @@ use crate::settings::Settings;
 use crate::tray::{self, Ev};
 use crate::util::{base, exe, near_port, port_open, w, wp, work};
 use crate::view::{self, PGroup, Snap};
+use crate::icon::{self, Px};
 use crate::{autorun, coreup, dialog, pick, profiles, sysproxy, AppWindow, Pick, Profile, State};
 use slint::winit_030::winit::event::WindowEvent;
 use slint::winit_030::{EventResult, WinitWindowAccessor};
-use slint::{ComponentHandle, ModelRc, Timer, TimerMode, VecModel, Weak};
+use slint::{ComponentHandle, Image, ModelRc, Timer, TimerMode, VecModel, Weak};
 use std::cell::RefCell;
-use std::collections::{BTreeSet, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::path::Path;
 use std::ptr::{null, null_mut};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -39,7 +40,8 @@ struct Ctl {
     fresh: bool,
     fetching: bool,
     note: Timer,
-    picks: Vec<(String, String)>,
+    picks: Vec<(String, String, String)>,
+    icons: HashMap<String, Image>,
     query: String,
     _timer: Timer,
 }
@@ -95,6 +97,7 @@ pub fn init(ui: &AppWindow) {
         fetching: false,
         note: Timer::default(),
         picks: Vec::new(),
+        icons: HashMap::new(),
         query: String::new(),
         _timer: timer,
     };
@@ -743,12 +746,32 @@ impl Ctl {
         });
     }
 
-    fn picked(&mut self, kind: i32, v: Vec<(String, String)>) {
-        if self.ui.upgrade().is_none_or(|u| u.global::<State>().get_pick_kind() != kind) {
-            return;
-        }
+    fn picked(&mut self, kind: i32, v: Vec<(String, String, String)>) {
+        let Some(u) = self.ui.upgrade().filter(|u| u.global::<State>().get_pick_kind() == kind) else { return };
         self.picks = v;
         self.ui(|s| s.set_pick_busy(false));
+        self.show_picks();
+        if self.icons.len() > 500 {
+            self.icons.clear();
+        }
+        let need: Vec<String> = self.picks.iter().map(|p| p.2.to_lowercase()).filter(|p| !p.is_empty() && !self.icons.contains_key(p)).collect();
+        if need.is_empty() {
+            return;
+        }
+        for p in &need {
+            self.icons.insert(p.clone(), Image::default());
+        }
+        let size = (20.0 * u.window().scale_factor()).round() as u32;
+        thread::spawn(move || {
+            let got: Vec<(String, Px)> = need.into_iter().filter_map(|p| icon::load(&p, size).map(|i| (p, i))).collect();
+            later(move |c| c.iconed(got));
+        });
+    }
+
+    fn iconed(&mut self, got: Vec<(String, Px)>) {
+        for (p, i) in got {
+            self.icons.insert(p, Image::from_rgba8(i));
+        }
         self.show_picks();
     }
 
@@ -761,9 +784,13 @@ impl Ctl {
         let v: Vec<Pick> = self
             .picks
             .iter()
-            .filter(|(_, x)| !self.st.bypass.iter().any(|b| b.eq_ignore_ascii_case(x)))
-            .filter(|(n, x)| n.to_lowercase().contains(&self.query) || x.to_lowercase().contains(&self.query))
-            .map(|(n, x)| Pick { label: if n == x { n.as_str().into() } else { format!("{n} · {x}").into() }, exe: x.as_str().into() })
+            .filter(|(_, x, _)| !self.st.bypass.iter().any(|b| b.eq_ignore_ascii_case(x)))
+            .filter(|(n, x, _)| n.to_lowercase().contains(&self.query) || x.to_lowercase().contains(&self.query))
+            .map(|(n, x, p)| Pick {
+                label: if n == x { n.as_str().into() } else { format!("{n} · {x}").into() },
+                exe: x.as_str().into(),
+                icon: self.icons.get(&p.to_lowercase()).cloned().unwrap_or_default(),
+            })
             .collect();
         self.ui(|s| s.set_picks(ModelRc::new(VecModel::from(v))));
     }

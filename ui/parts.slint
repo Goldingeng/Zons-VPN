@@ -231,6 +231,8 @@ export component Empty inherits VerticalLayout {
 export component AppRow inherits Rectangle {
     in property <string> name;
     in property <string> action;
+    in property <image> icon;
+    in property <bool> slot;
     callback clicked;
     height: 40px;
     border-radius: 8px;
@@ -240,6 +242,14 @@ export component AppRow inherits Rectangle {
         padding-left: 10px;
         padding-right: 6px;
         spacing: 8px;
+        if root.slot: VerticalLayout {
+            alignment: center;
+            Image {
+                width: 20px;
+                height: 20px;
+                source: root.icon;
+            }
+        }
         Label {
             text: root.name;
             overflow: elide;
