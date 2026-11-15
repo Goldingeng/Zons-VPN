@@ -1,7 +1,8 @@
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
-import { State } from "types.slint";
-import { Card, Header, Label, Dim, Seg, Icon, Toggle, Scroll, Column } from "parts.slint";
+import { ScrollView } from "std-widgets.slint";
+import { State, Node, Group } from "types.slint";
+import { Card, Header, Label, Dim, Seg, Icon, Toggle, Scroll, Column, Btn } from "parts.slint";
 
 component Stat inherits HorizontalLayout {
     in property <string> icon;
@@ -119,19 +120,111 @@ component Power inherits Rectangle {
     }
 }
 
+component DropRow inherits Rectangle {
+    in property <Node> node;
+    callback clicked;
+    height: 36px;
+    border-radius: 6px;
+    background: root.node.selected ? Theme.accent-soft : ta.has-hover ? Theme.hover : transparent;
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => {
+            root.clicked();
+        }
+    }
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 10px;
+        VerticalLayout {
+            alignment: center;
+            Icon {
+                d: root.node.selected ? Icons.check : Icons.globe;
+                width: 14px;
+                height: 14px;
+                color: root.node.selected ? Theme.accent-text : Theme.faint;
+            }
+        }
+        Text {
+            text: root.node.name;
+            color: Theme.text;
+            font-size: 13px;
+            vertical-alignment: center;
+            overflow: elide;
+            horizontal-stretch: 1;
+        }
+        Text {
+            width: 64px;
+            font-size: 12px;
+            vertical-alignment: center;
+            horizontal-alignment: right;
+            text: root.node.delay < 0 ? "—" : root.node.delay == 0 ? "таймаут" : root.node.delay + " мс";
+            color: root.node.delay < 0 ? Theme.faint : root.node.delay == 0 ? Theme.bad : root.node.delay < 800 ? Theme.accent-text : Theme.warn;
+        }
+    }
+}
+
+component Drop inherits Card {
+    in property <Group> group;
+    callback picked;
+    background: Theme.raised;
+    VerticalLayout {
+        padding: 8px;
+        spacing: 6px;
+        HorizontalLayout {
+            padding-left: 6px;
+            spacing: 8px;
+            Dim {
+                text: root.group.name == "" ? (State.ready ? "В профиле нет групп для выбора" : "Ядро не запущено") : root.group.name;
+                vertical-alignment: center;
+                overflow: elide;
+                horizontal-stretch: 1;
+            }
+            if root.group.name != "": Btn {
+                icon: Icons.refresh;
+                text: root.group.testing ? "Проверка…" : "Задержка";
+                enabled: !root.group.testing;
+                clicked => {
+                    State.test(root.group.name);
+                }
+            }
+            Btn {
+                text: "Все группы";
+                clicked => {
+                    State.page = 1;
+                    State.page-changed(1);
+                }
+            }
+        }
+        if root.group.nodes.length > 0: ScrollView {
+            height: min(root.group.nodes.length * 38px, 228px);
+            viewport-width: self.visible-width;
+            viewport-height: list.preferred-height;
+            list := VerticalLayout {
+                width: parent.visible-width;
+                spacing: 2px;
+                for n in root.group.nodes: DropRow {
+                    node: n;
+                    clicked => {
+                        State.select(root.group.name, n.name);
+                        root.picked();
+                    }
+                }
+            }
+        }
+    }
+}
+
 export component HomePage inherits VerticalLayout {
+    property <bool> drop;
     padding-left: 32px;
     padding-right: 32px;
     padding-top: 26px;
     spacing: 8px;
     Header {
         title: "Обзор";
-        Dim {
-            text: State.profile == "" ? "Профиль не выбран" : "Профиль  " + State.profile;
-            vertical-alignment: center;
-        }
     }
-    Scroll {
+    sc := Scroll {
         vertical-stretch: 1;
         pad: 24px;
         Column {
@@ -139,35 +232,11 @@ export component HomePage inherits VerticalLayout {
             VerticalLayout {
                 spacing: 6px;
                 padding-top: 6px;
-                HorizontalLayout {
-                    alignment: center;
-                    spacing: 8px;
-                    VerticalLayout {
-                        alignment: center;
-                        Rectangle {
-                            width: 6px;
-                            height: 6px;
-                            border-radius: 3px;
-                            background: State.tun ? Theme.accent-text : Theme.faint;
-                        }
-                    }
-                    Text {
-                        text: "Режим TUN";
-                        color: State.tun ? Theme.accent-text : Theme.dim;
-                        font-size: 12px;
-                    }
-                }
                 Text {
                     text: State.tun ? "TUN включён" : "TUN выключен";
                     color: Theme.text;
                     font-size: 28px;
                     font-weight: 600;
-                    horizontal-alignment: center;
-                }
-                Text {
-                    text: State.tun ? "Туннель работает в режиме «" + (State.mode == "global" ? "Глобально" : State.mode == "direct" ? "Напрямую" : "Правила") + "»" : "Включите туннель для трафика приложений";
-                    color: Theme.dim;
-                    font-size: 13px;
                     horizontal-alignment: center;
                 }
             }
@@ -185,8 +254,8 @@ export component HomePage inherits VerticalLayout {
                     font-weight: 600;
                     horizontal-alignment: center;
                 }
-                Text {
-                    text: State.tun ? "Туннель активен" : State.admin ? "Весь трафик системы через виртуальный адаптер" : "Потребуется разрешение администратора";
+                if !State.tun && !State.admin: Text {
+                    text: "Потребуется разрешение администратора";
                     color: Theme.dim;
                     font-size: 12px;
                     horizontal-alignment: center;
@@ -202,14 +271,16 @@ export component HomePage inherits VerticalLayout {
             Rectangle {
                 height: 6px;
             }
-            Card {
+            card := Card {
                 height: 64px;
                 background: ta.has-hover ? Theme.raised : Theme.card;
                 ta := TouchArea {
                     mouse-cursor: pointer;
                     clicked => {
-                        State.page = 1;
-                        State.page-changed(1);
+                        root.drop = !root.drop;
+                        if root.drop {
+                            sc.viewport-y -= max(0px, card.absolute-position.y + card.height + 94px + min(State.groups[0].nodes.length * 38px, 228px) - sc.absolute-position.y - sc.visible-height);
+                        }
                     }
                 }
                 HorizontalLayout {
@@ -236,23 +307,23 @@ export component HomePage inherits VerticalLayout {
                     VerticalLayout {
                         alignment: center;
                         Icon {
-                            d: Icons.chevron;
+                            d: root.drop ? Icons.chevdown : Icons.chevron;
                             width: 14px;
                             height: 14px;
                         }
                     }
                 }
             }
+            if root.drop: Drop {
+                group: State.groups[0];
+                picked => {
+                    root.drop = false;
+                }
+            }
             VerticalLayout {
                 spacing: 8px;
-                HorizontalLayout {
-                    Dim {
-                        text: "Режим маршрутизации";
-                        horizontal-stretch: 1;
-                    }
-                    Dim {
-                        text: State.mode == "global" ? "Весь трафик через выбранный узел" : State.mode == "direct" ? "Без прокси" : "По правилам профиля";
-                    }
+                Dim {
+                    text: "Режим маршрутизации";
                 }
                 Card {
                     HorizontalLayout {
@@ -288,15 +359,10 @@ export component HomePage inherits VerticalLayout {
             }
             HorizontalLayout {
                 spacing: 12px;
-                VerticalLayout {
-                    spacing: 3px;
+                Label {
+                    text: "Системный прокси";
                     horizontal-stretch: 1;
-                    Label {
-                        text: "Системный прокси";
-                    }
-                    Dim {
-                        text: "Для приложений, использующих прокси Windows";
-                    }
+                    vertical-alignment: center;
                 }
                 VerticalLayout {
                     alignment: center;

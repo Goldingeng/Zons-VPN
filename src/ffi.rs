@@ -163,6 +163,22 @@ pub struct OPENFILENAMEW {
     pub flags_ex: u32,
 }
 
+#[repr(C)]
+pub struct PROCESSENTRY32W {
+    pub size: u32,
+    pub usage: u32,
+    pub pid: u32,
+    pub heap: usize,
+    pub module: u32,
+    pub threads: u32,
+    pub parent: u32,
+    pub priority: i32,
+    pub flags: u32,
+    pub exe: [u16; 260],
+}
+
+pub const TH32CS_SNAPPROCESS: u32 = 0x2;
+
 pub const OFN_NOCHANGEDIR: u32 = 0x8;
 pub const OFN_FILEMUSTEXIST: u32 = 0x1000;
 pub const OFN_EXPLORER: u32 = 0x80000;
@@ -176,6 +192,7 @@ const _: () = {
     assert!(std::mem::size_of::<JOBINFO>() == 144);
     assert!(std::mem::size_of::<SECURITY_ATTRIBUTES>() == 24);
     assert!(std::mem::size_of::<OPENFILENAMEW>() == 152);
+    assert!(std::mem::size_of::<PROCESSENTRY32W>() == 568);
 };
 
 #[link(name = "user32")]
@@ -225,6 +242,11 @@ extern "system" {
     pub fn CreateJobObjectW(sa: *const c_void, name: *const u16) -> HANDLE;
     pub fn SetInformationJobObject(job: HANDLE, class: i32, info: *const c_void, len: u32) -> i32;
     pub fn AssignProcessToJobObject(job: HANDLE, p: HANDLE) -> i32;
+    pub fn CreateToolhelp32Snapshot(flags: u32, pid: u32) -> HANDLE;
+    pub fn Process32FirstW(snap: HANDLE, e: *mut PROCESSENTRY32W) -> i32;
+    pub fn Process32NextW(snap: HANDLE, e: *mut PROCESSENTRY32W) -> i32;
+    pub fn ProcessIdToSessionId(pid: u32, sid: *mut u32) -> i32;
+    pub fn GetCurrentProcessId() -> u32;
 }
 
 #[link(name = "advapi32")]
