@@ -182,8 +182,6 @@ component Drop inherits Rectangle {
     in property <int> kind;
     in property <Group> group;
     callback picked;
-    width: 300px;
-    height: root.kind == 1 ? min(State.profiles.length * 38px, 228px) + 16px : (root.group.nodes.length > 0 ? 44px + min(root.group.nodes.length * 38px, 228px) + 8px : 44px);
     background: Theme.raised;
     border-radius: Theme.radius;
     border-width: 1px;
@@ -252,212 +250,247 @@ component Drop inherits Rectangle {
     }
 }
 
-export component HomePage inherits VerticalLayout {
+export component HomePage inherits Rectangle {
     property <int> drop;
-    function reveal() {
-        if root.drop != 0 {
-            sc.viewport-y -= max(0px, card.absolute-position.y + card.height + 4px + (root.drop == 1 ? min(State.profiles.length * 38px, 228px) + 16px : 44px + min(State.groups[0].nodes.length * 38px, 228px) + 8px) - sc.absolute-position.y - sc.visible-height);
+    property <length> cx: card.absolute-position.x - root.absolute-position.x;
+    property <length> cy: card.absolute-position.y - root.absolute-position.y;
+    property <length> dw: root.drop == 1 ? max(card.width * 0.3, 260px) : card.width * 0.7;
+    property <length> dx: max(8px, min(root.drop == 1 ? cx : cx + card.width * 0.3, root.width - dw - 8px));
+    property <length> want: root.drop == 1 ? min(State.profiles.length * 38px, 380px) + 16px : State.groups[0].nodes.length > 0 ? 52px + min(State.groups[0].nodes.length * 38px, 380px) : 44px;
+    property <length> below: root.height - cy - card.height - 12px;
+    property <length> above: cy - 12px;
+    property <bool> up: want > below && above > below;
+    property <length> dh: max(44px, min(want, up ? above : below));
+    property <length> dy: up ? cy - 4px - dh : cy + card.height + 4px;
+    VerticalLayout {
+        padding-left: 32px;
+        padding-right: 32px;
+        padding-top: 26px;
+        spacing: 8px;
+        Header {
+            title: "Обзор";
         }
-    }
-    padding-left: 32px;
-    padding-right: 32px;
-    padding-top: 26px;
-    spacing: 8px;
-    Header {
-        title: "Обзор";
-    }
-    sc := Scroll {
-        vertical-stretch: 1;
-        pad: 24px;
-        Column {
-            max: 600px;
-            VerticalLayout {
-                spacing: 6px;
-                padding-top: 6px;
-                Text {
-                    text: State.tun ? "TUN включён" : State.active ? "Системный прокси включён" : "VPN выключен";
-                    color: State.active ? Theme.good : Theme.dim;
-                    font-size: 28px;
-                    font-weight: 600;
-                    horizontal-alignment: center;
-                }
-            }
-            HorizontalLayout {
-                alignment: center;
-                padding-top: 8px;
-                Power { }
-            }
-            VerticalLayout {
-                spacing: 4px;
-                Text {
-                    text: State.tun ? "Отключить TUN" : "Включить TUN";
-                    color: Theme.text;
-                    font-size: 15px;
-                    font-weight: 600;
-                    horizontal-alignment: center;
-                }
-                if !State.tun && !State.admin: Text {
-                    text: "Потребуется разрешение администратора";
-                    color: Theme.dim;
-                    font-size: 12px;
-                    horizontal-alignment: center;
-                }
-                if !State.running && State.status-bad: Text {
-                    text: State.status;
-                    color: Theme.bad;
-                    font-size: 12px;
-                    wrap: word-wrap;
-                    horizontal-alignment: center;
-                }
-            }
-            Rectangle {
-                height: 6px;
-            }
-            card := Card {
-                height: 64px;
-                background: Theme.card;
-                Rectangle {
-                    x: 1px;
-                    width: parent.width * 0.3;
-                    height: parent.height;
-                    border-radius: Theme.radius;
-                    background: pa.has-hover || root.drop == 1 ? Theme.raised : transparent;
-                    pa := TouchArea {
-                        mouse-cursor: pointer;
-                        clicked => {
-                            root.drop = root.drop == 1 ? 0 : 1;
-                            root.reveal();
-                        }
-                    }
-                }
-                Rectangle {
-                    x: parent.width * 0.3;
-                    width: parent.width * 0.7 - 1px;
-                    height: parent.height;
-                    border-radius: Theme.radius;
-                    background: sa.has-hover || root.drop == 2 ? Theme.raised : transparent;
-                    sa := TouchArea {
-                        mouse-cursor: pointer;
-                        clicked => {
-                            root.drop = root.drop == 2 ? 0 : 2;
-                            root.reveal();
-                        }
+        Scroll {
+            vertical-stretch: 1;
+            pad: 24px;
+            Column {
+                max: 600px;
+                VerticalLayout {
+                    spacing: 6px;
+                    padding-top: 6px;
+                    Text {
+                        text: State.tun ? "TUN включён" : State.active ? "Системный прокси включён" : "VPN выключен";
+                        color: State.active ? Theme.good : Theme.dim;
+                        font-size: 28px;
+                        font-weight: 600;
+                        horizontal-alignment: center;
                     }
                 }
                 HorizontalLayout {
-                    padding-left: 18px;
-                    padding-right: 14px;
-                    Step {
-                        icon: Icons.file;
-                        label: "Профиль";
-                        value: State.profile == "" ? "—" : State.profile;
-                        horizontal-stretch: 3;
+                    alignment: center;
+                    padding-top: 8px;
+                    Power { }
+                }
+                VerticalLayout {
+                    spacing: 4px;
+                    Text {
+                        text: State.tun ? "Отключить TUN" : "Включить TUN";
+                        color: Theme.text;
+                        font-size: 15px;
+                        font-weight: 600;
+                        horizontal-alignment: center;
                     }
-                    Link { }
-                    Step {
-                        icon: Icons.nodes;
-                        label: State.node-group == "" ? "Группа" : State.node-group;
-                        value: State.node == "" ? "—" : State.node;
-                        horizontal-stretch: 3.5;
+                    if !State.tun && !State.admin: Text {
+                        text: "Потребуется разрешение администратора";
+                        color: Theme.dim;
+                        font-size: 12px;
+                        horizontal-alignment: center;
                     }
-                    Link { }
-                    Step {
-                        icon: Icons.globe;
-                        label: "Сервер";
-                        value: State.node-end == "" ? "—" : State.node-end;
-                        extra: State.node-delay > 0 ? State.node-delay + " мс" : "";
-                        horizontal-stretch: 3.5;
+                    if !State.running && State.status-bad: Text {
+                        text: State.status;
+                        color: Theme.bad;
+                        font-size: 12px;
+                        wrap: word-wrap;
+                        horizontal-alignment: center;
+                    }
+                }
+                Rectangle {
+                    height: 6px;
+                }
+                card := Card {
+                    height: 64px;
+                    background: Theme.card;
+                    Rectangle {
+                        x: 1px;
+                        width: parent.width * 0.3;
+                        height: parent.height;
+                        border-radius: Theme.radius;
+                        background: pa.has-hover || root.drop == 1 ? Theme.raised : transparent;
+                        pa := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => {
+                                root.drop = root.drop == 1 ? 0 : 1;
+                            }
+                        }
+                    }
+                    Rectangle {
+                        x: parent.width * 0.3;
+                        width: parent.width * 0.7 - 1px;
+                        height: parent.height;
+                        border-radius: Theme.radius;
+                        background: sa.has-hover || root.drop == 2 ? Theme.raised : transparent;
+                        sa := TouchArea {
+                            mouse-cursor: pointer;
+                            clicked => {
+                                root.drop = root.drop == 2 ? 0 : 2;
+                            }
+                        }
+                    }
+                    HorizontalLayout {
+                        padding-left: 18px;
+                        padding-right: 14px;
+                        Step {
+                            icon: Icons.file;
+                            label: "Профиль";
+                            value: State.profile == "" ? "—" : State.profile;
+                            horizontal-stretch: 3;
+                        }
+                        Link { }
+                        Step {
+                            icon: Icons.nodes;
+                            label: State.node-group == "" ? "Группа" : State.node-group;
+                            value: State.node == "" ? "—" : State.node;
+                            horizontal-stretch: 3.5;
+                        }
+                        Link { }
+                        Step {
+                            icon: Icons.globe;
+                            label: "Сервер";
+                            value: State.node-end == "" ? "—" : State.node-end;
+                            extra: State.node-delay > 0 ? State.node-delay + " мс" : "";
+                            horizontal-stretch: 3.5;
+                        }
+                        VerticalLayout {
+                            alignment: center;
+                            Icon {
+                                d: root.drop != 0 ? Icons.chevdown : Icons.chevron;
+                                width: 14px;
+                                height: 14px;
+                            }
+                        }
+                    }
+                }
+                VerticalLayout {
+                    spacing: 8px;
+                    Dim {
+                        text: "Режим маршрутизации";
+                    }
+                    Card {
+                        HorizontalLayout {
+                            padding: 4px;
+                            spacing: 4px;
+                            Seg {
+                                text: "Правила";
+                                active: State.mode == "rule";
+                                clicked => {
+                                    State.set-mode("rule");
+                                }
+                            }
+                            Seg {
+                                text: "Глобально";
+                                active: State.mode == "global";
+                                clicked => {
+                                    State.set-mode("global");
+                                }
+                            }
+                        }
+                    }
+                }
+                Rectangle {
+                    height: 1px;
+                    background: Theme.line;
+                }
+                HorizontalLayout {
+                    spacing: 12px;
+                    Label {
+                        text: "Системный прокси";
+                        horizontal-stretch: 1;
+                        vertical-alignment: center;
                     }
                     VerticalLayout {
                         alignment: center;
-                        Icon {
-                            d: root.drop != 0 ? Icons.chevdown : Icons.chevron;
-                            width: 14px;
-                            height: 14px;
-                        }
-                    }
-                }
-                if root.drop != 0: Drop {
-                    x: root.drop == 1 ? 0px : parent.width - self.width;
-                    y: parent.height + 4px;
-                    kind: root.drop;
-                    group: State.groups[0];
-                    picked => {
-                        root.drop = 0;
-                    }
-                }
-            }
-            VerticalLayout {
-                spacing: 8px;
-                Dim {
-                    text: "Режим маршрутизации";
-                }
-                Card {
-                    HorizontalLayout {
-                        padding: 4px;
-                        spacing: 4px;
-                        Seg {
-                            text: "Правила";
-                            active: State.mode == "rule";
-                            clicked => {
-                                State.set-mode("rule");
-                            }
-                        }
-                        Seg {
-                            text: "Глобально";
-                            active: State.mode == "global";
-                            clicked => {
-                                State.set-mode("global");
+                        Toggle {
+                            on: State.sysproxy;
+                            toggled(v) => {
+                                State.set-sysproxy(v);
                             }
                         }
                     }
-                }
-            }
-            Rectangle {
-                height: 1px;
-                background: Theme.line;
-            }
-            HorizontalLayout {
-                spacing: 12px;
-                Label {
-                    text: "Системный прокси";
-                    horizontal-stretch: 1;
-                    vertical-alignment: center;
-                }
-                VerticalLayout {
-                    alignment: center;
-                    Toggle {
-                        on: State.sysproxy;
-                        toggled(v) => {
-                            State.set-sysproxy(v);
-                        }
-                    }
-                }
-            }
-            Rectangle {
-                height: 1px;
-                background: Theme.line;
-            }
-            HorizontalLayout {
-                spacing: 24px;
-                padding-left: 4px;
-                Stat {
-                    icon: Icons.down;
-                    label: "Загрузка";
-                    value: State.down-speed;
-                    sub: "Всего " + State.down-total;
                 }
                 Rectangle {
-                    width: 1px;
+                    height: 1px;
                     background: Theme.line;
                 }
-                Stat {
-                    icon: Icons.up;
-                    label: "Отдача";
-                    value: State.up-speed;
-                    sub: "Всего " + State.up-total;
+                HorizontalLayout {
+                    spacing: 24px;
+                    padding-left: 4px;
+                    Stat {
+                        icon: Icons.down;
+                        label: "Загрузка";
+                        value: State.down-speed;
+                        sub: "Всего " + State.down-total;
+                    }
+                    Rectangle {
+                        width: 1px;
+                        background: Theme.line;
+                    }
+                    Stat {
+                        icon: Icons.up;
+                        label: "Отдача";
+                        value: State.up-speed;
+                        sub: "Всего " + State.up-total;
+                    }
                 }
+            }
+        }
+    }
+    if root.drop != 0: TouchArea {
+        width: root.width;
+        height: root.height;
+        clicked => {
+            root.drop = 0;
+        }
+    }
+    if root.drop != 0: Rectangle {
+        x: root.dx;
+        y: root.dy;
+        width: root.dw;
+        height: root.dh;
+        Rectangle {
+            x: -4px;
+            y: -2px;
+            width: parent.width + 8px;
+            height: parent.height + 10px;
+            border-radius: Theme.radius + 4px;
+            background: #0000002a;
+        }
+        Rectangle {
+            x: -2px;
+            y: 0px;
+            width: parent.width + 4px;
+            height: parent.height + 5px;
+            border-radius: Theme.radius + 2px;
+            background: #00000040;
+        }
+        Drop {
+            width: parent.width;
+            height: parent.height;
+            kind: root.drop;
+            group: State.groups[0];
+            picked => {
+                root.drop = 0;
             }
         }
     }
 }
+
