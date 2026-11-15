@@ -2,7 +2,7 @@ import { LineEdit } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { State, Profile } from "types.slint";
-import { Card, Header, Head, Dim, Btn, Scroll, Column, Icon, Hint } from "parts.slint";
+import { Card, Header, Head, Dim, Btn, Scroll, Column, Icon } from "parts.slint";
 
 component ProfileRow inherits Rectangle {
     in property <Profile> p;
@@ -62,12 +62,6 @@ component ProfileRow inherits Rectangle {
                     height: 13px;
                     color: Theme.accent-text;
                 }
-            }
-            Text {
-                text: "Выбран";
-                color: Theme.accent-text;
-                font-size: 12px;
-                vertical-alignment: center;
             }
         }
         VerticalLayout {
@@ -130,9 +124,6 @@ export component ProfilesPage inherits VerticalLayout {
                         VerticalLayout {
                             spacing: 4px;
                             width: 170px;
-                            Dim {
-                                text: "Имя";
-                            }
                             name := LineEdit {
                                 placeholder-text: "Название профиля";
                             }
@@ -140,11 +131,8 @@ export component ProfilesPage inherits VerticalLayout {
                         VerticalLayout {
                             spacing: 4px;
                             horizontal-stretch: 1;
-                            Dim {
-                                text: "Ссылка на подписку";
-                            }
                             url := LineEdit {
-                                placeholder-text: "https://";
+                                placeholder-text: "Ссылка на подписку";
                             }
                         }
                         VerticalLayout {
@@ -183,9 +171,6 @@ export component ProfilesPage inherits VerticalLayout {
             }
             for p in State.profiles: ProfileRow {
                 p: p;
-            }
-            Hint {
-                text: "Нажмите на профиль, чтобы выбрать его. Локальный профиль не обновляется по ссылке.";
             }
         }
     }

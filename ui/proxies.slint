@@ -122,27 +122,6 @@ component GroupCard inherits Card {
                 }
             }
         }
-        if root.group.open: HorizontalLayout {
-            padding-left: 14px;
-            padding-right: 14px;
-            padding-top: 4px;
-            Dim {
-                text: "Узел";
-                color: Theme.faint;
-                horizontal-stretch: 3;
-            }
-            Dim {
-                text: "Тип";
-                color: Theme.faint;
-                horizontal-stretch: 1;
-            }
-            Dim {
-                width: 70px;
-                text: "Задержка";
-                color: Theme.faint;
-                horizontal-alignment: right;
-            }
-        }
         if root.group.open: VerticalLayout {
             spacing: 2px;
             for n[i] in root.group.nodes: NodeRow {
@@ -163,10 +142,6 @@ export component ProxiesPage inherits VerticalLayout {
     spacing: 18px;
     Header {
         title: "Прокси";
-        Dim {
-            text: State.groups.length == 0 ? "" : State.groups.length == 1 ? "1 группа выбора" : State.groups.length < 5 ? State.groups.length + " группы выбора" : State.groups.length + " групп выбора";
-            vertical-alignment: center;
-        }
     }
     if State.groups.length == 0: Dim {
         text: State.ready ? "В профиле нет групп для выбора" : "Ядро не запущено";

@@ -2,7 +2,7 @@ import { LineEdit } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { State } from "types.slint";
-import { Card, Header, Head, Dim, Btn, Scroll, AppRow, Empty, Hint } from "parts.slint";
+import { Card, Header, Head, Dim, Btn, Scroll, AppRow, Empty } from "parts.slint";
 
 component ListCard inherits Card {
     in property <string> title;
@@ -41,11 +41,6 @@ export component BypassPage inherits VerticalLayout {
     spacing: 16px;
     Header {
         title: "Мимо VPN";
-    }
-    Dim {
-        text: "Трафик этих приложений идёт напрямую, минуя прокси и TUN";
-        font-size: 13px;
-        wrap: word-wrap;
     }
     Card {
         HorizontalLayout {
@@ -93,7 +88,6 @@ export component BypassPage inherits VerticalLayout {
                 vertical-stretch: 1;
                 icon: Icons.bypass;
                 title: "Исключений пока нет";
-                text: "Укажите имя .exe или выберите приложение через «Обзор…»";
             }
             if State.bypass.length > 0: Scroll {
                 vertical-stretch: 1;
@@ -114,7 +108,6 @@ export component BypassPage inherits VerticalLayout {
                 vertical-stretch: 1;
                 icon: Icons.pulse;
                 title: State.running ? "Приложения ещё не подключались" : "Ядро не запущено";
-                text: State.running ? "Здесь появятся приложения, которые используют соединение" : "Список появится после запуска ядра";
             }
             if State.seen-apps.length > 0: Scroll {
                 vertical-stretch: 1;
@@ -128,8 +121,5 @@ export component BypassPage inherits VerticalLayout {
                 }
             }
         }
-    }
-    Hint {
-        text: "Приложения из списка справа можно добавить в исключения";
     }
 }
