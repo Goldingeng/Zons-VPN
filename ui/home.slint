@@ -92,22 +92,36 @@ component Link inherits Rectangle {
 }
 
 component Power inherits Rectangle {
+    property <bool> connecting: State.running && !State.ready;
+    property <bool> dim: false;
     width: 148px;
     height: 148px;
     border-radius: 74px;
     border-width: 3px;
-    border-color: State.active ? Theme.good : Theme.off;
+    border-color: root.connecting ? Theme.warn : State.active ? Theme.good : Theme.off;
+    opacity: root.connecting && root.dim ? 0.35 : 1;
+    animate border-color { duration: 250ms; easing: ease-in-out; }
+    animate opacity { duration: 600ms; easing: ease-in-out; }
+    Timer {
+        running: root.connecting;
+        interval: 600ms;
+        triggered => {
+            root.dim = !root.dim;
+        }
+    }
     Rectangle {
         width: 128px;
         height: 128px;
         border-radius: 64px;
         background: State.tun ? (ta.has-hover ? Theme.good-hover : Theme.good-fill) : (ta.has-hover ? Theme.off-hover : Theme.off);
+        animate background { duration: 250ms; easing: ease-in-out; }
         Icon {
             d: Icons.power;
             width: 44px;
             height: 44px;
             stroke-width: 2.2px;
             color: State.tun ? #ffffff : Theme.dim;
+            animate color { duration: 250ms; easing: ease-in-out; }
         }
     }
     ta := TouchArea {
