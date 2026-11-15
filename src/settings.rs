@@ -10,6 +10,7 @@ pub struct Settings {
     pub sysproxy: bool,
     pub tun: bool,
     pub bypass: Vec<String>,
+    pub known: Vec<(String, String, String)>,
 }
 
 fn file() -> PathBuf {
@@ -25,6 +26,7 @@ impl Settings {
             sysproxy: true,
             tun: false,
             bypass: Vec::new(),
+            known: Vec::new(),
         };
         let Ok(t) = fs::read_to_string(file()) else { return s };
         for l in t.lines() {
@@ -37,6 +39,16 @@ impl Settings {
                 "sysproxy" => s.sysproxy = v == "1",
                 "tun" => s.tun = v == "1",
                 "bypass" => s.bypass = v.split('|').filter(|a| !a.is_empty()).map(String::from).collect(),
+                "known" => {
+                    s.known = v
+                        .split('|')
+                        .filter_map(|e| {
+                            let mut p = e.split('>');
+                            Some((p.next()?.to_string(), p.next()?.to_string(), p.next().unwrap_or("").to_string()))
+                        })
+                        .filter(|k| !k.0.is_empty())
+                        .collect()
+                }
                 _ => {}
             }
         }
@@ -47,13 +59,14 @@ impl Settings {
         let _ = fs::write(
             file(),
             format!(
-                "profile={}\nmode={}\nport={}\nsysproxy={}\ntun={}\nbypass={}\n",
+                "profile={}\nmode={}\nport={}\nsysproxy={}\ntun={}\nbypass={}\nknown={}\n",
                 self.profile,
                 self.mode,
                 self.port,
                 self.sysproxy as u8,
                 self.tun as u8,
-                self.bypass.join("|")
+                self.bypass.join("|"),
+                self.known.iter().map(|k| format!("{}>{}>{}", k.0, k.1, k.2)).collect::<Vec<_>>().join("|")
             ),
         );
     }

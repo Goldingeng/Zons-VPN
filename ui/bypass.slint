@@ -114,10 +114,13 @@ export component BypassPage inherits VerticalLayout {
                 vertical-stretch: 1;
                 gap: 2px;
                 for a in State.bypass: AppRow {
-                    name: a;
+                    name: a.label;
+                    hint: a.hint;
+                    icon: a.icon;
+                    slot: true;
                     action: "Убрать";
                     clicked => {
-                        State.remove-app(a);
+                        State.remove-app(a.exe);
                     }
                 }
             }
@@ -134,10 +137,13 @@ export component BypassPage inherits VerticalLayout {
                 vertical-stretch: 1;
                 gap: 2px;
                 for a in State.seen-apps: AppRow {
-                    name: a;
+                    name: a.label;
+                    hint: a.hint;
+                    icon: a.icon;
+                    slot: true;
                     action: "Добавить";
                     clicked => {
-                        State.add-app(a);
+                        State.add-app(a.exe);
                     }
                 }
             }
@@ -204,6 +210,7 @@ export component PickPanel inherits Rectangle {
                     gap: 2px;
                     for p in State.picks: AppRow {
                         name: p.label;
+                        hint: p.hint;
                         icon: p.icon;
                         slot: true;
                         action: "Добавить";
