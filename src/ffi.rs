@@ -36,14 +36,7 @@ pub const IMAGE_ICON: u32 = 1;
 
 pub const ERROR_ALREADY_EXISTS: u32 = 183;
 pub const WAIT_TIMEOUT: u32 = 0x102;
-pub const CREATE_SUSPENDED: u32 = 0x4;
 pub const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-pub const STARTF_USESTDHANDLES: u32 = 0x100;
-pub const GENERIC_WRITE: u32 = 0x4000_0000;
-pub const FILE_SHARE_READ: u32 = 0x1;
-pub const FILE_SHARE_WRITE: u32 = 0x2;
-pub const CREATE_ALWAYS: u32 = 2;
-pub const FILE_ATTRIBUTE_NORMAL: u32 = 0x80;
 pub const JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE: u32 = 0x2000;
 pub const JOB_EXTENDED_LIMIT_INFO: i32 = 9;
 
@@ -96,37 +89,6 @@ pub struct NOTIFYICONDATAW {
     pub info_flags: u32,
     pub guid: [u32; 4],
     pub balloon_icon: HICON,
-}
-
-#[repr(C)]
-pub struct SECURITY_ATTRIBUTES {
-    pub len: u32,
-    pub sd: *mut c_void,
-    pub inherit: i32,
-}
-
-#[repr(C)]
-pub struct STARTUPINFOW {
-    pub cb: u32,
-    pub reserved: *mut u16,
-    pub desktop: *mut u16,
-    pub title: *mut u16,
-    pub dims: [u32; 7],
-    pub flags: u32,
-    pub show: u16,
-    pub reserved2_len: u16,
-    pub reserved2: *mut u8,
-    pub std_in: HANDLE,
-    pub std_out: HANDLE,
-    pub std_err: HANDLE,
-}
-
-#[repr(C)]
-pub struct PROCESS_INFORMATION {
-    pub process: HANDLE,
-    pub thread: HANDLE,
-    pub pid: u32,
-    pub tid: u32,
 }
 
 #[repr(C)]
@@ -212,10 +174,7 @@ pub const OFN_EXPLORER: u32 = 0x80000;
 const _: () = {
     assert!(std::mem::size_of::<WNDCLASSW>() == 72);
     assert!(std::mem::size_of::<NOTIFYICONDATAW>() == 976);
-    assert!(std::mem::size_of::<STARTUPINFOW>() == 104);
-    assert!(std::mem::size_of::<PROCESS_INFORMATION>() == 24);
     assert!(std::mem::size_of::<JOBINFO>() == 144);
-    assert!(std::mem::size_of::<SECURITY_ATTRIBUTES>() == 24);
     assert!(std::mem::size_of::<OPENFILENAMEW>() == 152);
     assert!(std::mem::size_of::<PROCESSENTRY32W>() == 568);
     assert!(std::mem::size_of::<ICONINFO>() == 32);
@@ -270,10 +229,6 @@ extern "system" {
     pub fn Sleep(ms: u32);
     pub fn CloseHandle(h: HANDLE) -> i32;
     pub fn CreateMutexW(sa: *const c_void, owner: i32, name: *const u16) -> HANDLE;
-    pub fn CreateFileW(name: *const u16, access: u32, share: u32, sa: *const SECURITY_ATTRIBUTES, disp: u32, flags: u32, tpl: HANDLE) -> HANDLE;
-    pub fn CreateProcessW(app: *const u16, cmd: *mut u16, pa: *const c_void, ta: *const c_void, inherit: i32, flags: u32, env: *const c_void, dir: *const u16, si: *const STARTUPINFOW, pi: *mut PROCESS_INFORMATION) -> i32;
-    pub fn ResumeThread(h: HANDLE) -> u32;
-    pub fn TerminateProcess(h: HANDLE, code: u32) -> i32;
     pub fn WaitForSingleObject(h: HANDLE, ms: u32) -> u32;
     pub fn CreateJobObjectW(sa: *const c_void, name: *const u16) -> HANDLE;
     pub fn SetInformationJobObject(job: HANDLE, class: i32, info: *const c_void, len: u32) -> i32;
