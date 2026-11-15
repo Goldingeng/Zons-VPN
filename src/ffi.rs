@@ -178,6 +178,31 @@ pub struct PROCESSENTRY32W {
 }
 
 pub const TH32CS_SNAPPROCESS: u32 = 0x2;
+pub const PROCESS_QUERY_LIMITED_INFORMATION: u32 = 0x1000;
+
+#[repr(C)]
+pub struct ICONINFO {
+    pub is_icon: i32,
+    pub x: u32,
+    pub y: u32,
+    pub mask: HANDLE,
+    pub color: HANDLE,
+}
+
+#[repr(C)]
+pub struct BITMAPINFOHEADER {
+    pub size: u32,
+    pub width: i32,
+    pub height: i32,
+    pub planes: u16,
+    pub bits: u16,
+    pub compression: u32,
+    pub image_size: u32,
+    pub xppm: i32,
+    pub yppm: i32,
+    pub used: u32,
+    pub important: u32,
+}
 
 pub const OFN_NOCHANGEDIR: u32 = 0x8;
 pub const OFN_FILEMUSTEXIST: u32 = 0x1000;
@@ -193,6 +218,8 @@ const _: () = {
     assert!(std::mem::size_of::<SECURITY_ATTRIBUTES>() == 24);
     assert!(std::mem::size_of::<OPENFILENAMEW>() == 152);
     assert!(std::mem::size_of::<PROCESSENTRY32W>() == 568);
+    assert!(std::mem::size_of::<ICONINFO>() == 32);
+    assert!(std::mem::size_of::<BITMAPINFOHEADER>() == 40);
 };
 
 #[link(name = "user32")]
@@ -213,6 +240,7 @@ extern "system" {
     pub fn DestroyIcon(i: HICON) -> i32;
     pub fn GetSystemMetrics(i: i32) -> i32;
     pub fn FindWindowW(cls: *const u16, name: *const u16) -> HWND;
+    pub fn GetIconInfo(i: HICON, info: *mut ICONINFO) -> i32;
 }
 
 #[link(name = "comdlg32")]
@@ -225,6 +253,7 @@ extern "system" {
     pub fn Shell_NotifyIconW(msg: u32, data: *const NOTIFYICONDATAW) -> i32;
     pub fn ShellExecuteW(h: HWND, op: *const u16, file: *const u16, params: *const u16, dir: *const u16, show: i32) -> HINSTANCE;
     pub fn IsUserAnAdmin() -> i32;
+    pub fn SHDefExtractIconW(file: *const u16, index: i32, flags: u32, large: *mut HICON, small: *mut HICON, size: u32) -> i32;
 }
 
 #[link(name = "kernel32")]
@@ -247,6 +276,16 @@ extern "system" {
     pub fn Process32NextW(snap: HANDLE, e: *mut PROCESSENTRY32W) -> i32;
     pub fn ProcessIdToSessionId(pid: u32, sid: *mut u32) -> i32;
     pub fn GetCurrentProcessId() -> u32;
+    pub fn OpenProcess(access: u32, inherit: i32, pid: u32) -> HANDLE;
+    pub fn QueryFullProcessImageNameW(p: HANDLE, flags: u32, name: *mut u16, len: *mut u32) -> i32;
+}
+
+#[link(name = "gdi32")]
+extern "system" {
+    pub fn CreateCompatibleDC(dc: HANDLE) -> HANDLE;
+    pub fn DeleteDC(dc: HANDLE) -> i32;
+    pub fn DeleteObject(o: HANDLE) -> i32;
+    pub fn GetDIBits(dc: HANDLE, bmp: HANDLE, start: u32, lines: u32, bits: *mut c_void, info: *mut BITMAPINFOHEADER, usage: u32) -> i32;
 }
 
 #[link(name = "advapi32")]
