@@ -16,7 +16,7 @@ component Row inherits HorizontalLayout {
         Label {
             text: root.label;
         }
-        Dim {
+        if root.hint != "": Dim {
             text: root.hint;
         }
     }
@@ -42,7 +42,6 @@ export component SettingsPage inherits VerticalLayout {
                 VerticalLayout {
                     Row {
                         label: "Порт прокси";
-                        hint: "Локальный порт для подключения приложений";
                         VerticalLayout {
                             alignment: center;
                             LineEdit {
@@ -62,7 +61,6 @@ export component SettingsPage inherits VerticalLayout {
                     }
                     Row {
                         label: "Запускать вместе с Windows";
-                        hint: "Сворачивать в трей при запуске";
                         VerticalLayout {
                             alignment: center;
                             Toggle {
@@ -155,9 +153,6 @@ export component SettingsPage inherits VerticalLayout {
                                 color: Theme.text;
                                 font-size: 20px;
                                 font-weight: 600;
-                            }
-                            Dim {
-                                text: "Нативный клиент для ядра mihomo";
                             }
                         }
                     }

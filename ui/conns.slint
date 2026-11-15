@@ -1,7 +1,7 @@
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { State, Conn } from "types.slint";
-import { Card, Header, Dim, Btn, Scroll, Empty, Hint, Icon } from "parts.slint";
+import { Card, Header, Dim, Btn, Scroll, Empty, Icon } from "parts.slint";
 
 component ConnRow inherits Rectangle {
     in property <Conn> c;
@@ -144,7 +144,6 @@ export component ConnsPage inherits VerticalLayout {
                 vertical-stretch: 1;
                 icon: Icons.pulse;
                 title: State.running ? "Активных подключений нет" : "Ядро не запущено";
-                text: "Здесь появятся текущие соединения приложений";
             }
             if State.conns.length > 0: Scroll {
                 vertical-stretch: 1;
@@ -155,8 +154,5 @@ export component ConnsPage inherits VerticalLayout {
                 }
             }
         }
-    }
-    Hint {
-        text: "Список обновляется при появлении сетевого трафика";
     }
 }

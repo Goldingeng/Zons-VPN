@@ -204,31 +204,9 @@ export component Header inherits HorizontalLayout {
     @children
 }
 
-export component Hint inherits HorizontalLayout {
-    in property <string> text;
-    spacing: 6px;
-    VerticalLayout {
-        alignment: center;
-        Icon {
-            d: Icons.info;
-            width: 13px;
-            height: 13px;
-            color: Theme.faint;
-        }
-    }
-    Text {
-        text: root.text;
-        color: Theme.faint;
-        font-size: 12px;
-        wrap: word-wrap;
-        horizontal-stretch: 1;
-    }
-}
-
 export component Empty inherits VerticalLayout {
     in property <string> icon;
     in property <string> title;
-    in property <string> text;
     alignment: center;
     spacing: 8px;
     padding: 16px;
@@ -245,13 +223,6 @@ export component Empty inherits VerticalLayout {
         color: Theme.text;
         font-size: 14px;
         font-weight: 600;
-        horizontal-alignment: center;
-    }
-    Text {
-        text: root.text;
-        color: Theme.dim;
-        font-size: 12px;
-        wrap: word-wrap;
         horizontal-alignment: center;
     }
 }
