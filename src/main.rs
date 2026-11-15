@@ -24,6 +24,9 @@ fn main() {
     let args: Vec<String> = std::env::args().collect();
     let wait = args.iter().any(|a| a == "--wait");
     let hidden = args.iter().any(|a| a == "--hidden");
+    std::panic::set_hook(Box::new(|i| {
+        let _ = std::fs::write(util::work().join("crash.txt"), i.to_string());
+    }));
     let Some(_lock) = tray::lock(wait) else {
         tray::wake();
         return;

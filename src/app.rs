@@ -415,14 +415,24 @@ impl Ctl {
         if !matches!(m, "rule" | "global" | "direct") {
             return;
         }
-        if !self.ok || self.api().patch(&format!("{{\"mode\":\"{m}\"}}")) {
-            self.st.mode = m.into();
-            self.st.save();
+        self.st.mode = m.into();
+        self.st.save();
+        self.ui(|s| s.set_mode(m.into()));
+        if !self.ok {
+            return;
         }
-        let cur = self.st.mode.clone();
-        self.ui(|s| s.set_mode(cur.as_str().into()));
-        self.dirty = true;
-        self.poll();
+        let (api, g, body) = (self.api(), self.gen, format!("{{\"mode\":\"{m}\"}}"));
+        thread::spawn(move || {
+            if api.patch(&body) {
+                api.close_all();
+            }
+            later(move |c| {
+                if g == c.gen {
+                    c.dirty = true;
+                    c.poll();
+                }
+            });
+        });
     }
 
     fn set_port(&mut self, p: i32) {

@@ -1,14 +1,17 @@
 use crate::api::Api;
 use crate::ffi::*;
-use crate::util::{base, exe, free_port, secret, w, wp, work};
+use crate::util::{base, exe, free_port, secret, work};
 use std::fs;
 use std::mem::{size_of, zeroed};
+use std::os::windows::io::AsRawHandle;
+use std::os::windows::process::CommandExt;
 use std::path::{Path, PathBuf};
-use std::ptr::{null, null_mut};
+use std::process::{Child, Command, Stdio};
+use std::ptr::null;
 
 pub struct Core {
     job: HANDLE,
-    proc_: HANDLE,
+    child: Option<Child>,
     ctl: u16,
     secret: String,
 }
@@ -21,7 +24,7 @@ impl Core {
             info.flags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
             unsafe { SetInformationJobObject(job, JOB_EXTENDED_LIMIT_INFO, &info as *const _ as _, size_of::<JOBINFO>() as u32) };
         }
-        Self { job, proc_: null_mut(), ctl: 0, secret: String::new() }
+        Self { job, child: None, ctl: 0, secret: String::new() }
     }
 
     pub fn exe() -> Option<PathBuf> {
@@ -48,59 +51,43 @@ impl Core {
         fs::create_dir_all(&wd).map_err(|e| e.to_string())?;
         self.ctl = free_port();
         self.secret = secret();
-        let mut cmd = w(&format!(
-            "\"{}\" -d \"{}\" -f \"{}\" -ext-ctl 127.0.0.1:{} -secret {}",
-            bin.display(),
-            wd.display(),
-            profile.display(),
-            self.ctl,
-            self.secret
-        ));
-        let dir = wp(&wd);
-        let sa = SECURITY_ATTRIBUTES { len: size_of::<SECURITY_ATTRIBUTES>() as u32, sd: null_mut(), inherit: 1 };
-        unsafe {
-            let log = CreateFileW(wp(&wd.join("mihomo.log")).as_ptr(), GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, &sa, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, null_mut());
-            let has = log != invalid();
-            let mut si: STARTUPINFOW = zeroed();
-            si.cb = size_of::<STARTUPINFOW>() as u32;
-            if has {
-                si.flags = STARTF_USESTDHANDLES;
-                si.std_out = log;
-                si.std_err = log;
-            }
-            let mut pi: PROCESS_INFORMATION = zeroed();
-            let ok = CreateProcessW(null(), cmd.as_mut_ptr(), null(), null(), has as i32, CREATE_NO_WINDOW | CREATE_SUSPENDED, null(), dir.as_ptr(), &si, &mut pi);
-            let err = std::io::Error::last_os_error();
-            if has {
-                CloseHandle(log);
-            }
-            if ok == 0 {
-                return Err(format!("Запуск ядра: {err}"));
-            }
-            if !self.job.is_null() {
-                AssignProcessToJobObject(self.job, pi.process);
-            }
-            ResumeThread(pi.thread);
-            CloseHandle(pi.thread);
-            self.proc_ = pi.process;
+        let log = wd.join("mihomo.log");
+        let _ = fs::rename(&log, wd.join("mihomo.old.log"));
+        let (out, err) = match fs::File::create(&log).and_then(|f| Ok((f.try_clone()?, f))) {
+            Ok((a, b)) => (Stdio::from(a), Stdio::from(b)),
+            Err(_) => (Stdio::null(), Stdio::null()),
+        };
+        let child = Command::new(&bin)
+            .arg("-d")
+            .arg(&wd)
+            .arg("-f")
+            .arg(profile)
+            .arg("-ext-ctl")
+            .arg(format!("127.0.0.1:{}", self.ctl))
+            .arg("-secret")
+            .arg(&self.secret)
+            .current_dir(&wd)
+            .stdin(Stdio::null())
+            .stdout(out)
+            .stderr(err)
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+            .map_err(|e| format!("Запуск ядра: {e}"))?;
+        if !self.job.is_null() {
+            unsafe { AssignProcessToJobObject(self.job, child.as_raw_handle() as HANDLE) };
         }
+        self.child = Some(child);
         Ok(())
     }
 
     pub fn stop(&mut self) {
-        if self.proc_.is_null() {
-            return;
-        }
-        unsafe {
-            TerminateProcess(self.proc_, 0);
-            WaitForSingleObject(self.proc_, 3000);
-            CloseHandle(self.proc_);
-        }
-        self.proc_ = null_mut();
+        let Some(mut c) = self.child.take() else { return };
+        let _ = c.kill();
+        unsafe { WaitForSingleObject(c.as_raw_handle() as HANDLE, 3000) };
     }
 
     pub fn alive(&self) -> bool {
-        !self.proc_.is_null() && unsafe { WaitForSingleObject(self.proc_, 0) } == WAIT_TIMEOUT
+        self.child.as_ref().is_some_and(|c| unsafe { WaitForSingleObject(c.as_raw_handle() as HANDLE, 0) } == WAIT_TIMEOUT)
     }
 
     pub fn api(&self) -> Api {
