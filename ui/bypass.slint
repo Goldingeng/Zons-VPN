@@ -65,6 +65,7 @@ export component BypassPage inherits VerticalLayout {
                     icon: Icons.plus;
                     text: "Добавить";
                     primary: true;
+                    enabled: app.text != "";
                     clicked => {
                         State.add-app(app.text);
                         app.text = "";

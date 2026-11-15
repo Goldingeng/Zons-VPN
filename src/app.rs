@@ -705,8 +705,10 @@ impl Ctl {
 
     fn add_app(&mut self, a: &str) {
         let a = a.trim().trim_matches('"');
-        let a = a.rsplit(['\\', '/']).next().unwrap_or("").trim();
-        if a.is_empty() || a.contains([',', '"', '\'', '\n', '|']) {
+        let a = a.rsplit(['\\', '/']).next().unwrap_or("");
+        let a: String = a.chars().filter(|c| !matches!(c, ',' | '"' | '\'' | '\n' | '\r' | '|')).collect();
+        let a = a.trim();
+        if a.is_empty() {
             return;
         }
         let a = if a.contains('.') { a.to_string() } else { format!("{a}.exe") };
