@@ -40,6 +40,7 @@ export struct Pick {
 
 export global State {
     in-out property <int> page: 0;
+    in-out property <length> side: 220px;
     in property <bool> running;
     in property <bool> ready;
     in property <bool> admin;
@@ -74,6 +75,7 @@ export global State {
     in property <[Pick]> picks;
 
     callback page-changed(int);
+    callback side-changed(length);
     callback set-sysproxy(bool);
     callback set-tun(bool);
     callback set-mode(string);

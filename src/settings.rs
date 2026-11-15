@@ -9,6 +9,7 @@ pub struct Settings {
     pub port: u16,
     pub sysproxy: bool,
     pub tun: bool,
+    pub side: u16,
     pub bypass: Vec<String>,
     pub known: Vec<(String, String, String)>,
 }
@@ -25,6 +26,7 @@ impl Settings {
             port: 7890,
             sysproxy: true,
             tun: false,
+            side: 220,
             bypass: Vec::new(),
             known: Vec::new(),
         };
@@ -38,6 +40,7 @@ impl Settings {
                 "port" => s.port = v.parse().unwrap_or(7890),
                 "sysproxy" => s.sysproxy = v == "1",
                 "tun" => s.tun = v == "1",
+                "side" => s.side = v.parse().unwrap_or(220).clamp(64, 320),
                 "bypass" => s.bypass = v.split('|').filter(|a| !a.is_empty()).map(String::from).collect(),
                 "known" => {
                     s.known = v
@@ -59,12 +62,13 @@ impl Settings {
         let _ = fs::write(
             file(),
             format!(
-                "profile={}\nmode={}\nport={}\nsysproxy={}\ntun={}\nbypass={}\nknown={}\n",
+                "profile={}\nmode={}\nport={}\nsysproxy={}\ntun={}\nside={}\nbypass={}\nknown={}\n",
                 self.profile,
                 self.mode,
                 self.port,
                 self.sysproxy as u8,
                 self.tun as u8,
+                self.side,
                 self.bypass.join("|"),
                 self.known.iter().map(|k| format!("{}>{}>{}", k.0, k.1, k.2)).collect::<Vec<_>>().join("|")
             ),
