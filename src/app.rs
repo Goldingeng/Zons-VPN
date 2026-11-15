@@ -389,6 +389,7 @@ impl Ctl {
             tip.push_str(" · TUN");
         }
         tray::set(i, &tip);
+        window_icon(&self.ui);
     }
 
     fn set_sys(&mut self, v: bool) {
@@ -978,9 +979,22 @@ fn elevate() {
     }
 }
 
+fn window_icon(ui: &slint::Weak<AppWindow>) {
+    use slint::winit_030::winit::raw_window_handle::{HasWindowHandle, RawWindowHandle};
+    let Some(u) = ui.upgrade() else { return };
+    let h = u.window().with_winit_window(|w| match w.window_handle().map(|h| h.as_raw()) {
+        Ok(RawWindowHandle::Win32(h)) => Some(h.hwnd.get() as crate::ffi::HWND),
+        _ => None,
+    });
+    if let Some(Some(h)) = h {
+        tray::window_icon(h);
+    }
+}
+
 fn show() {
     if let Some(u) = with(|c| c.ui.upgrade()).flatten() {
         let _ = u.show();
+        window_icon(&u.as_weak());
         u.window().set_minimized(false);
         u.set_flip(!u.get_flip());
     }
