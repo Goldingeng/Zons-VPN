@@ -221,6 +221,7 @@ impl Ctl {
     fn boot(&mut self) {
         let _ = std::fs::create_dir_all(profiles::dir());
         self.show_bypass();
+        self.backfill();
         self.pick();
         self.show_profiles();
         if Core::exe().is_none() && !coreup::staged() {
@@ -738,6 +739,37 @@ impl Ctl {
         let paths: Vec<String> = self.st.known.iter().map(|k| k.1.clone()).collect();
         self.fetch(paths);
         self.show_lists();
+    }
+
+    fn backfill(&self) {
+        let lost = |c: &Ctl| c.st.bypass.iter().any(|b| !c.st.known.iter().any(|k| k.0.eq_ignore_ascii_case(b) && !k.1.is_empty()));
+        if !lost(self) {
+            return;
+        }
+        thread::spawn(|| {
+            let games = pick::steam();
+            let apps = pick::running();
+            later(move |c| c.backfilled(games, apps));
+        });
+    }
+
+    fn backfilled(&mut self, games: Vec<(String, String, String)>, apps: Vec<(String, String, String)>) {
+        let mut changed = false;
+        for b in self.st.bypass.clone() {
+            if self.st.known.iter().any(|k| k.0.eq_ignore_ascii_case(&b) && !k.1.is_empty()) {
+                continue;
+            }
+            let hit = games.iter().find(|g| g.1.eq_ignore_ascii_case(&b)).map(|g| (g.2.clone(), g.0.clone())).or_else(|| apps.iter().find(|g| g.1.eq_ignore_ascii_case(&b)).map(|g| (g.2.clone(), String::new())));
+            if let Some((path, name)) = hit {
+                self.st.known.retain(|k| !k.0.eq_ignore_ascii_case(&b));
+                self.st.known.push((b, path.replace(['|', '>'], ""), name.replace(['|', '>'], "")));
+                changed = true;
+            }
+        }
+        if changed {
+            self.st.save();
+            self.show_bypass();
+        }
     }
 
     fn show_lists(&self) {
