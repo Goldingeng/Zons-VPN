@@ -1,4 +1,4 @@
-import { LineEdit, AboutSlint } from "std-widgets.slint";
+import { LineEdit } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { State } from "types.slint";
@@ -165,12 +165,8 @@ export component SettingsPage inherits VerticalLayout {
                         height: 1px;
                         background: Theme.line;
                     }
-                    HorizontalLayout {
-                        alignment: start;
-                        AboutSlint {
-                            width: 180px;
-                            height: 110px;
-                        }
+                    Dim {
+                        text: "Сделано на Slint · slint.dev";
                     }
                 }
             }
