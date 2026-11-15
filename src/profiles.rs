@@ -87,7 +87,7 @@ pub fn file_of(name: &str) -> String {
 pub fn add(name: &str, url: &str) -> Result<String, String> {
     let url = url.trim();
     if !(url.starts_with("http://") || url.starts_with("https://")) {
-        return Err("Ссылка должна начинаться с http:// или https://".into());
+        return Err("Р РЋРЎРѓРЎвЂ№Р В»Р С”Р В° Р Т‘Р С•Р В»Р В¶Р Р…Р В° Р Р…Р В°РЎвЂЎР С‘Р Р…Р В°РЎвЂљРЎРЉРЎРѓРЎРЏ РЎРѓ http:// Р С‘Р В»Р С‘ https://".into());
     }
     let mut name = safe(name.trim());
     if name.is_empty() {
@@ -144,7 +144,7 @@ fn fetch(s: &Sub, proxy: Option<u16>) -> Result<(), String> {
     } else if is_links(&t) {
         wrapper(s)
     } else {
-        return Err("ответ не похож на подписку".into());
+        return Err("Р С•РЎвЂљР Р†Р ВµРЎвЂљ Р Р…Р Вµ Р С—Р С•РЎвЂ¦Р С•Р В¶ Р Р…Р В° Р С—Р С•Р Т‘Р С—Р С‘РЎРѓР С”РЎС“".into());
     };
     fs::create_dir_all(dir()).map_err(|e| e.to_string())?;
     fs::write(path(&file_of(&s.name)), body).map_err(|e| e.to_string())
@@ -153,7 +153,7 @@ fn fetch(s: &Sub, proxy: Option<u16>) -> Result<(), String> {
 pub fn update(name: &str, proxy: Option<u16>) -> Result<usize, String> {
     let subs: Vec<Sub> = subs().into_iter().filter(|s| name.is_empty() || s.name == name).collect();
     if subs.is_empty() {
-        return Err("Нет подписок для обновления".into());
+        return Err("Р СњР ВµРЎвЂљ Р С—Р С•Р Т‘Р С—Р С‘РЎРѓР С•Р С” Р Т‘Р В»РЎРЏ Р С•Р В±Р Р…Р С•Р Р†Р В»Р ВµР Р…Р С‘РЎРЏ".into());
     }
     let mut errs = Vec::new();
     for s in &subs {
@@ -217,11 +217,26 @@ pub fn inject(src: &str, apps: &[String]) -> String {
 
 const OWN: [&str; 6] = ["port:", "socks-port:", "mixed-port:", "redir-port:", "tproxy-port:", "find-process-mode:"];
 
+const FAKE: &str = "fake-ip-range: 198.19.0.1/16";
+
 fn own(src: &str, port: u16) -> String {
     let mut o = format!("mixed-port: {port}\nfind-process-mode: always\n");
-    for l in src.lines().filter(|l| !OWN.iter().any(|k| l.starts_with(k))) {
-        o.push_str(l);
+    let has = src.contains("fake-ip-range:");
+    let lines: Vec<&str> = src.lines().filter(|l| !OWN.iter().any(|k| l.starts_with(k))).collect();
+    for (i, l) in lines.iter().enumerate() {
+        let t = l.trim_start();
+        if t.starts_with("fake-ip-range:") {
+            o.push_str(&l[..l.len() - t.len()]);
+            o.push_str(FAKE);
+        } else {
+            o.push_str(l);
+        }
         o.push('\n');
+        if !has && l.trim_end() == "dns:" {
+            let next = lines.get(i + 1).copied().unwrap_or("");
+            let ind = &next[..next.len() - next.trim_start().len()];
+            o.push_str(&format!("{}{FAKE}\n", if ind.is_empty() { "  " } else { ind }));
+        }
     }
     o
 }
