@@ -28,6 +28,8 @@ struct T {
     hwnd: HWND,
     nid: NOTIFYICONDATAW,
     icons: [HICON; 3],
+    big: [HICON; 2],
+    green: bool,
     taskbar: u32,
     handler: fn(Ev),
     state: fn() -> (bool, bool),
@@ -93,6 +95,8 @@ pub fn init(handler: fn(Ev), state: fn() -> (bool, bool)) {
     }
     let n = unsafe { GetSystemMetrics(SM_CXSMICON) }.max(16);
     let icons = [icon(inst, 2, n), icon(inst, 1, n), icon(inst, 3, n)];
+    let b = unsafe { GetSystemMetrics(SM_CXICON) }.max(32);
+    let big = [icon(inst, 1, b), icon(inst, 3, b)];
     let mut nid: NOTIFYICONDATAW = unsafe { zeroed() };
     nid.size = size_of::<NOTIFYICONDATAW>() as u32;
     nid.hwnd = hwnd;
@@ -103,14 +107,25 @@ pub fn init(handler: fn(Ev), state: fn() -> (bool, bool)) {
     fill(&mut nid.tip, "Zons VPN");
     unsafe { Shell_NotifyIconW(NIM_ADD, &nid) };
     let taskbar = unsafe { RegisterWindowMessageW(w("TaskbarCreated").as_ptr()) };
-    TRAY.with(|t| *t.borrow_mut() = Some(T { hwnd, nid, icons, taskbar, handler, state }));
+    TRAY.with(|t| *t.borrow_mut() = Some(T { hwnd, nid, icons, big, green: false, taskbar, handler, state }));
 }
 
 pub fn set(idx: usize, tip: &str) {
     with(|t| {
         t.nid.icon = t.icons[idx.min(2)];
+        t.green = idx == 2;
         fill(&mut t.nid.tip, tip);
         unsafe { Shell_NotifyIconW(NIM_MODIFY, &t.nid) };
+    });
+}
+
+pub fn window_icon(hwnd: HWND) {
+    with(|t| {
+        let (big, small) = if t.green { (t.big[1], t.icons[2]) } else { (t.big[0], t.icons[1]) };
+        unsafe {
+            SendMessageW(hwnd, WM_SETICON, 1, big as isize);
+            SendMessageW(hwnd, WM_SETICON, 0, small as isize);
+        }
     });
 }
 
@@ -129,7 +144,7 @@ pub fn remove() {
     if let Some(t) = TRAY.with(|t| t.borrow_mut().take()) {
         unsafe {
             Shell_NotifyIconW(NIM_DELETE, &t.nid);
-            for i in t.icons {
+            for i in t.icons.into_iter().chain(t.big) {
                 DestroyIcon(i);
             }
             DestroyWindow(t.hwnd);

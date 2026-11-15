@@ -32,6 +32,8 @@ pub const NIF_INFO: u32 = 0x10;
 pub const NIIF_INFO: u32 = 0x1;
 pub const NIIF_ERROR: u32 = 0x3;
 pub const SM_CXSMICON: i32 = 49;
+pub const SM_CXICON: i32 = 11;
+pub const WM_SETICON: u32 = 0x80;
 pub const IMAGE_ICON: u32 = 1;
 
 pub const ERROR_ALREADY_EXISTS: u32 = 183;
@@ -198,6 +200,7 @@ extern "system" {
     pub fn LoadImageW(inst: HINSTANCE, name: *const u16, kind: u32, w: i32, h: i32, flags: u32) -> HICON;
     pub fn DestroyIcon(i: HICON) -> i32;
     pub fn GetSystemMetrics(i: i32) -> i32;
+    pub fn SendMessageW(h: HWND, m: u32, wp: usize, lp: isize) -> isize;
     pub fn FindWindowW(cls: *const u16, name: *const u16) -> HWND;
     pub fn GetIconInfo(i: HICON, info: *mut ICONINFO) -> i32;
 }
