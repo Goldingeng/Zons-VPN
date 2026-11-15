@@ -11,6 +11,12 @@ component ProfileRow inherits Rectangle {
     border-width: 1px;
     border-color: root.p.active ? Theme.accent-line : Theme.line;
     background: root.p.active ? Theme.accent-soft : ta.has-hover ? Theme.raised : Theme.card;
+    opacity: 0;
+    animate background, border-color { duration: Theme.mid; easing: ease-out; }
+    animate opacity { duration: Theme.mid; easing: ease-out; }
+    init => {
+        self.opacity = 1;
+    }
     ta := TouchArea {
         mouse-cursor: pointer;
         clicked => {

@@ -7,7 +7,13 @@ component ConnRow inherits Rectangle {
     in property <Conn> c;
     height: 50px;
     border-radius: 8px;
-    background: ta.has-hover ? Theme.hover : transparent;
+    background: ta.has-hover ? Theme.hover : Theme.card;
+    opacity: 0;
+    animate background { duration: Theme.fast; }
+    animate opacity { duration: Theme.mid; easing: ease-out; }
+    init => {
+        self.opacity = 1;
+    }
     ta := TouchArea { }
     HorizontalLayout {
         padding-left: 12px;
@@ -64,12 +70,14 @@ component ConnRow inherits Rectangle {
                 width: 26px;
                 height: 26px;
                 border-radius: 6px;
-                background: x.has-hover ? Theme.line : transparent;
+                background: x.has-hover ? Theme.line : Theme.line.transparentize(1);
+                animate background { duration: Theme.fast; }
                 Icon {
                     d: Icons.close;
                     width: 14px;
                     height: 14px;
                     color: x.has-hover ? Theme.bad : Theme.faint;
+                    animate color { duration: Theme.fast; }
                 }
                 x := TouchArea {
                     mouse-cursor: pointer;
