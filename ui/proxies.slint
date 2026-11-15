@@ -9,9 +9,15 @@ component NodeRow inherits Rectangle {
     callback clicked;
     height: 44px;
     border-radius: 8px;
-    border-width: root.node.selected ? 1px : 0px;
-    border-color: Theme.accent-line;
-    background: root.node.selected ? Theme.accent-soft : ta.has-hover ? Theme.hover : transparent;
+    border-width: 1px;
+    border-color: root.node.selected ? Theme.accent-line : Theme.card;
+    background: root.node.selected ? Theme.accent-soft : ta.has-hover ? Theme.hover : Theme.card;
+    opacity: 0;
+    animate background, border-color { duration: Theme.mid; easing: ease-out; }
+    animate opacity { duration: Theme.mid; easing: ease-out; }
+    init => {
+        self.opacity = 1;
+    }
     if !root.last && !root.node.selected: Rectangle {
         y: parent.height - 1px;
         height: 1px;
@@ -35,11 +41,13 @@ component NodeRow inherits Rectangle {
                 border-radius: 8px;
                 border-width: 1.5px;
                 border-color: root.node.selected ? Theme.accent-text : Theme.faint;
-                if root.node.selected: Rectangle {
-                    width: 8px;
-                    height: 8px;
-                    border-radius: 4px;
+                animate border-color { duration: Theme.mid; }
+                Rectangle {
+                    width: root.node.selected ? 8px : 0px;
+                    height: self.width;
+                    border-radius: self.width / 2;
                     background: Theme.accent-text;
+                    animate width { duration: Theme.mid; easing: ease-out; }
                 }
             }
         }

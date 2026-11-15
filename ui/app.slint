@@ -1,7 +1,7 @@
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { State, Node, Group, Profile, Conn, Pick } from "types.slint";
-import { NavItem, Icon } from "parts.slint";
+import { NavItem, Icon, Show } from "parts.slint";
 import { HomePage } from "home.slint";
 import { ProxiesPage } from "proxies.slint";
 import { ProfilesPage } from "profiles.slint";
@@ -30,6 +30,23 @@ export component AppWindow inherits Window {
                 x: parent.width - 1px;
                 width: 1px;
                 background: Theme.line;
+            }
+            Rectangle {
+                x: root.compact ? 10px : 16px;
+                y: 86px + State.page * 40px;
+                width: parent.width - 2 * self.x;
+                height: 36px;
+                border-radius: 8px;
+                background: Theme.accent-soft;
+                animate y { duration: 260ms; easing: cubic-bezier(0.2, 0.8, 0.2, 1); }
+                Rectangle {
+                    x: 0px;
+                    y: 10px;
+                    width: 3px;
+                    height: 16px;
+                    border-radius: 2px;
+                    background: Theme.accent-text;
+                }
             }
             VerticalLayout {
                 padding: root.compact ? 10px : 16px;
@@ -83,6 +100,7 @@ export component AppWindow inherits Window {
                     height: 54px;
                     border-radius: 8px;
                     background: State.active ? Theme.good-fill : Theme.card;
+                    animate background { duration: 400ms; easing: ease-in-out; }
                     HorizontalLayout {
                         padding-left: root.compact ? (State.side - 20px - 10px) / 2 : 12px;
                         spacing: 10px;
@@ -93,6 +111,7 @@ export component AppWindow inherits Window {
                                 height: 10px;
                                 border-radius: 5px;
                                 background: State.active ? #ffffff : Theme.faint;
+                                animate background { duration: 400ms; }
                             }
                         }
                         if !root.compact: VerticalLayout {
@@ -101,12 +120,14 @@ export component AppWindow inherits Window {
                             Text {
                                 text: State.active ? "VPN включён" : "VPN выключен";
                                 color: State.active ? #ffffff : Theme.text;
+                                animate color { duration: 400ms; }
                                 font-size: 14px;
                                 font-weight: 600;
                             }
                             Text {
                                 text: State.ready ? "Ядро работает" : State.running ? "Запуск ядра…" : "Ядро остановлено";
                                 color: State.active ? #d5f3e3 : Theme.faint;
+                                animate color { duration: 400ms; }
                                 font-size: 11px;
                             }
                         }
@@ -132,29 +153,53 @@ export component AppWindow inherits Window {
         }
         Rectangle {
             horizontal-stretch: 1;
-            if State.page == 0: HomePage {
+            if State.page == 0: Show {
                 width: parent.width;
                 height: parent.height;
+                HomePage {
+                    width: parent.width;
+                    height: parent.height;
+                }
             }
-            if State.page == 1: ProxiesPage {
+            if State.page == 1: Show {
                 width: parent.width;
                 height: parent.height;
+                ProxiesPage {
+                    width: parent.width;
+                    height: parent.height;
+                }
             }
-            if State.page == 2: ProfilesPage {
+            if State.page == 2: Show {
                 width: parent.width;
                 height: parent.height;
+                ProfilesPage {
+                    width: parent.width;
+                    height: parent.height;
+                }
             }
-            if State.page == 3: BypassPage {
+            if State.page == 3: Show {
                 width: parent.width;
                 height: parent.height;
+                BypassPage {
+                    width: parent.width;
+                    height: parent.height;
+                }
             }
-            if State.page == 4: ConnsPage {
+            if State.page == 4: Show {
                 width: parent.width;
                 height: parent.height;
+                ConnsPage {
+                    width: parent.width;
+                    height: parent.height;
+                }
             }
-            if State.page == 5: SettingsPage {
+            if State.page == 5: Show {
                 width: parent.width;
                 height: parent.height;
+                SettingsPage {
+                    width: parent.width;
+                    height: parent.height;
+                }
             }
             if State.page == 3 && State.pick-kind > 0: PickPanel {
                 width: parent.width;

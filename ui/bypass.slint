@@ -152,7 +152,13 @@ export component BypassPage inherits VerticalLayout {
 }
 
 export component PickPanel inherits Rectangle {
+    property <float> t;
     background: #000000a0;
+    opacity: root.t;
+    animate t { duration: 220ms; easing: ease-out; }
+    init => {
+        root.t = 1;
+    }
     TouchArea {
         clicked => {
             State.pick-kind = 0;
@@ -161,6 +167,7 @@ export component PickPanel inherits Rectangle {
     Card {
         width: min(560px, root.width - 64px);
         height: root.height - 80px;
+        y: 40px + (1 - root.t) * 24px;
         TouchArea { }
         VerticalLayout {
             HorizontalLayout {
