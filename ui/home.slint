@@ -95,21 +95,19 @@ component Power inherits Rectangle {
     width: 148px;
     height: 148px;
     border-radius: 74px;
-    border-width: 1px;
-    border-color: State.tun ? Theme.accent-line : Theme.line;
+    border-width: 3px;
+    border-color: State.active ? Theme.good : Theme.off;
     Rectangle {
         width: 128px;
         height: 128px;
         border-radius: 64px;
-        border-width: State.tun ? 1px : 0px;
-        border-color: Theme.accent-line;
-        background: State.tun ? (ta.has-hover ? Theme.hover : Theme.accent-soft) : (ta.has-hover ? Theme.accent-hover : Theme.accent);
+        background: State.tun ? (ta.has-hover ? Theme.good-hover : Theme.good-fill) : (ta.has-hover ? Theme.off-hover : Theme.off);
         Icon {
             d: Icons.power;
             width: 44px;
             height: 44px;
             stroke-width: 2.2px;
-            color: State.tun ? Theme.accent-text : #ffffff;
+            color: State.tun ? #ffffff : Theme.dim;
         }
     }
     ta := TouchArea {
@@ -233,8 +231,8 @@ export component HomePage inherits VerticalLayout {
                 spacing: 6px;
                 padding-top: 6px;
                 Text {
-                    text: State.tun ? "TUN включён" : "TUN выключен";
-                    color: Theme.text;
+                    text: State.tun ? "TUN включён" : State.active ? "Системный прокси включён" : "VPN выключен";
+                    color: State.active ? Theme.good : Theme.dim;
                     font-size: 28px;
                     font-weight: 600;
                     horizontal-alignment: center;

@@ -34,6 +34,7 @@ export struct Conn {
 export struct Pick {
     label: string,
     exe: string,
+    icon: image,
 }
 
 export global State {
@@ -43,6 +44,7 @@ export global State {
     in property <bool> admin;
     in-out property <bool> sysproxy;
     in-out property <bool> tun;
+    out property <bool> active: tun || (sysproxy && ready);
     in-out property <string> mode: "rule";
     in property <string> profile;
     in property <string> node;

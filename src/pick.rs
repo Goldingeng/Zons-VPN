@@ -10,7 +10,7 @@ const JUNK: [&str; 14] = [
     "unins", "redist", "crash", "setup", "dxweb", "dotnet", "prereq", "report", "helper", "vc_", "easyanticheat", "battleye", "cefprocess", "update",
 ];
 
-pub fn steam() -> Vec<(String, String)> {
+pub fn steam() -> Vec<(String, String, String)> {
     let mut out = Vec::new();
     for lib in libs() {
         let apps = lib.join("steamapps");
@@ -33,8 +33,8 @@ pub fn steam() -> Vec<(String, String)> {
             if name.is_empty() || dir.is_empty() || name.starts_with("Steamworks") {
                 continue;
             }
-            if let Some(x) = main_exe(&apps.join("common").join(&dir), &[&name, &dir]) {
-                out.push((name, x));
+            if let Some((x, path)) = main_exe(&apps.join("common").join(&dir), &[&name, &dir]) {
+                out.push((name, x, path));
             }
         }
     }
@@ -87,24 +87,24 @@ fn kv(l: &str) -> Option<(String, String)> {
     Some((p[1].to_lowercase(), p[3].replace("\\\\", "\\")))
 }
 
-fn main_exe(dir: &Path, hints: &[&str]) -> Option<String> {
+fn main_exe(dir: &Path, hints: &[&str]) -> Option<(String, String)> {
     let mut all = Vec::new();
     walk(dir, 0, &mut all);
     let hints: Vec<String> = hints.iter().map(|h| plain(h)).collect();
     all.into_iter()
-        .max_by_key(|(depth, size, name)| {
+        .max_by_key(|(depth, size, name, _)| {
             let stem = plain(&name[..name.len() - 4]);
             let score = hints.iter().map(|h| stem.chars().zip(h.chars()).take_while(|(a, b)| a == b).count()).max().unwrap_or(0);
             (score, u32::MAX - depth, *size)
         })
-        .map(|b| b.2)
+        .map(|b| (b.2, b.3))
 }
 
 fn plain(s: &str) -> String {
     s.chars().filter(|c| c.is_alphanumeric()).flat_map(char::to_lowercase).collect()
 }
 
-fn walk(dir: &Path, depth: u32, all: &mut Vec<(u32, u64, String)>) {
+fn walk(dir: &Path, depth: u32, all: &mut Vec<(u32, u64, String, String)>) {
     let Ok(rd) = fs::read_dir(dir) else { return };
     for e in rd.flatten() {
         let Ok(t) = e.file_type() else { continue };
@@ -117,12 +117,12 @@ fn walk(dir: &Path, depth: u32, all: &mut Vec<(u32, u64, String)>) {
             continue;
         }
         if low.ends_with(".exe") && !JUNK.iter().any(|j| low.contains(j)) {
-            all.push((depth, e.metadata().map(|m| m.len()).unwrap_or(0), name));
+            all.push((depth, e.metadata().map(|m| m.len()).unwrap_or(0), name, e.path().display().to_string()));
         }
     }
 }
 
-pub fn running() -> Vec<(String, String)> {
+pub fn running() -> Vec<(String, String, String)> {
     let mut map = BTreeMap::new();
     let mut me = 0;
     unsafe { ProcessIdToSessionId(GetCurrentProcessId(), &mut me) };
@@ -139,10 +139,29 @@ pub fn running() -> Vec<(String, String)> {
         let n = e.exe.iter().position(|&c| c == 0).unwrap_or(e.exe.len());
         let name = String::from_utf16_lossy(&e.exe[..n]);
         if s == me && name.to_lowercase().ends_with(".exe") {
-            map.entry(name.to_lowercase()).or_insert(name);
+            let slot = map.entry(name.to_lowercase()).or_insert((name, String::new()));
+            if slot.1.is_empty() {
+                slot.1 = path(e.pid);
+            }
         }
         more = unsafe { Process32NextW(snap, &mut e) } != 0;
     }
     unsafe { CloseHandle(snap) };
-    map.into_values().map(|n| (n.clone(), n)).collect()
+    map.into_values().map(|(n, p)| (n.clone(), n, p)).collect()
+}
+
+fn path(pid: u32) -> String {
+    let h = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid) };
+    if h.is_null() {
+        return String::new();
+    }
+    let mut buf = [0u16; 1024];
+    let mut len = buf.len() as u32;
+    let ok = unsafe { QueryFullProcessImageNameW(h, 0, buf.as_mut_ptr(), &mut len) } != 0;
+    unsafe { CloseHandle(h) };
+    if ok {
+        String::from_utf16_lossy(&buf[..len as usize])
+    } else {
+        String::new()
+    }
 }

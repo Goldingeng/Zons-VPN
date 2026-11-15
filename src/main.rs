@@ -9,6 +9,7 @@ mod coreup;
 mod dialog;
 mod engine;
 mod ffi;
+mod icon;
 mod json;
 mod net;
 mod pick;
