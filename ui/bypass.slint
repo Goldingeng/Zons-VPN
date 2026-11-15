@@ -197,8 +197,7 @@ export component PickPanel inherits Rectangle {
                 if State.picks.length == 0: Empty {
                     vertical-stretch: 1;
                     icon: State.pick-kind == 1 ? Icons.grid : Icons.pulse;
-                    title: State.pick-busy ? "Ищу…" : "Ничего не найдено";
-                    text: State.pick-busy ? "" : State.pick-kind == 1 ? "Steam не найден или все игры уже в исключениях" : "Нет подходящих программ";
+                    title: State.pick-busy ? "Ищу…" : State.pick-kind == 1 ? "Steam не найден или все игры уже в исключениях" : "Нет подходящих программ";
                 }
                 if State.picks.length > 0: Scroll {
                     vertical-stretch: 1;
